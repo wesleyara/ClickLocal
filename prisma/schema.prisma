@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Board {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  position    Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  columns BoardColumn[]
+  tags    Tag[]
+
+  @@map("boards")
+}
+
+model BoardColumn {
+  id        Int      @id @default(autoincrement())
+  boardId   Int      @map("board_id")
+  name      String
+  color     String   @default("#6d5ce8")
+  position  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cards Card[]
+
+  @@map("board_columns")
+}
+
+model Card {
+  id          Int       @id @default(autoincrement())
+  columnId    Int       @map("column_id")
+  parentId    Int?      @map("parent_id")
+  title       String
+  description String?
+  position    Int
+  dueDate     DateTime? @map("due_date")
+  archived    Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  column      BoardColumn  @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  parent      Card?        @relation("CardChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Card[]       @relation("CardChildren")
+  subtasks    Subtask[]
+  tags        CardTag[]
+  timeEntries TimeEntry[]
+  activity    ActivityLogEntry[]
+  comments    Comment[]
+
+  @@map("cards")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  cardId    Int      @map("card_id")
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Subtask {
+  id        Int      @id @default(autoincrement())
+  cardId    Int      @map("card_id")
+  title     String
+  completed Boolean  @default(false)
+  position  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@map("subtasks")
+}
+
+model Tag {
+  id        Int      @id @default(autoincrement())
+  boardId   Int      @map("board_id")
+  name      String
+  color     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  board Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cards CardTag[]
+
+  @@map("tags")
+}
+
+model CardTag {
+  cardId Int @map("card_id")
+  tagId  Int @map("tag_id")
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([cardId, tagId])
+  @@map("card_tags")
+}
+
+model TimeEntry {
+  id         Int       @id @default(autoincrement())
+  cardId     Int       @map("card_id")
+  startedAt  DateTime  @map("started_at")
+  endedAt    DateTime? @map("ended_at")
+  durationMs Int?      @map("duration_ms")
+  source     String
+  note       String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@map("time_entries")
+}
+
+model ActivityLogEntry {
+  id        Int      @id @default(autoincrement())
+  cardId    Int      @map("card_id")
+  eventType String   @map("event_type")
+  payload   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@map("activity_log")
+}

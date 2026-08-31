@@ -1,0 +1,8 @@
+services:
+  clicklocal:
+    build: .
+    ports:
+      - "8880:8880"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
