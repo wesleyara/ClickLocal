@@ -15,7 +15,7 @@ async function handleDelete(board: { id: number, name: string }) {
 </script>
 
 <template>
-  <UContainer class="py-6 sm:py-10">
+  <div class="px-4 sm:px-8 py-6 sm:py-10">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
       <div>
         <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">
@@ -79,5 +79,5 @@ async function handleDelete(board: { id: number, name: string }) {
         </div>
       </NuxtLink>
     </div>
-  </UContainer>
+  </div>
 </template>

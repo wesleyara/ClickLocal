@@ -16,7 +16,10 @@ useSeoMeta({
 
 <template>
   <UApp>
-    <UHeader :toggle="false">
+    <UHeader
+      :toggle="false"
+      :ui="{ container: 'max-w-none w-full px-4 sm:px-8' }"
+    >
       <template #left>
         <NuxtLink
           to="/"

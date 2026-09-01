@@ -6,6 +6,7 @@ const emit = defineEmits<{
   toggle: [id: number, completed: boolean]
   remove: [id: number]
   add: [title: string]
+  rename: [id: number, title: string]
 }>()
 
 const doneCount = computed(() => props.subtasks.filter(s => s.completed).length)
@@ -19,6 +20,21 @@ function submit() {
   if (title) emit('add', title)
   newTitle.value = ''
   adding.value = false
+}
+
+const editingId = ref<number | null>(null)
+const editTitle = ref('')
+
+function startEdit(subtask: CardSubtask) {
+  editingId.value = subtask.id
+  editTitle.value = subtask.title
+}
+
+function submitEdit() {
+  if (editingId.value === null) return
+  const title = editTitle.value.trim()
+  if (title) emit('rename', editingId.value, title)
+  editingId.value = null
 }
 </script>
 
@@ -50,9 +66,21 @@ function submit() {
           :model-value="subtask.completed"
           @update:model-value="emit('toggle', subtask.id, !!$event)"
         />
+        <UInput
+          v-if="editingId === subtask.id"
+          v-model="editTitle"
+          autofocus
+          size="sm"
+          class="flex-1"
+          @keydown.enter="submitEdit"
+          @keydown.esc="editingId = null"
+          @blur="submitEdit"
+        />
         <span
-          class="text-[13px] flex-1"
+          v-else
+          class="text-[13px] flex-1 cursor-text"
           :class="subtask.completed ? 'line-through text-muted' : ''"
+          @click="startEdit(subtask)"
         >{{ subtask.title }}</span>
         <UButton
           icon="i-lucide-x"

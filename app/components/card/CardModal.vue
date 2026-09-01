@@ -33,11 +33,14 @@ const {
   removeComment,
   addSubtask,
   toggleSubtask,
+  renameSubtask,
   removeSubtask,
   addTag,
   removeTag,
   setArchived,
-  addChildCard
+  addChildCard,
+  saveTitle,
+  uploadImages
 } = useCard(activeCardId)
 const { tags: boardTags, createTag } = useBoardTags(boardIdRef)
 const { entries: activityEntries, refresh: refreshActivity } = useActivity(activeCardId)
@@ -70,6 +73,7 @@ let descriptionTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(() => card.value?.id, () => {
   descriptionDraft.value = card.value?.description ?? ''
+  editingTitle.value = false
 })
 
 function onDescriptionChange(value: string) {
@@ -112,6 +116,47 @@ async function handleRemoveSubtask(id: number) {
   await refreshActivity()
 }
 
+async function handleRenameSubtask(id: number, title: string) {
+  await renameSubtask(id, title)
+  await refreshActivity()
+}
+
+const editingTitle = ref(false)
+const titleDraft = ref('')
+
+function startEditTitle() {
+  if (!card.value) return
+  titleDraft.value = card.value.title
+  editingTitle.value = true
+}
+
+async function submitTitle() {
+  editingTitle.value = false
+  const title = titleDraft.value.trim()
+  if (!title || title === card.value?.title) return
+  await saveTitle(title)
+  await refreshActivity()
+}
+
+const toast = useToast()
+const lightbox = useTemplateRef('lightbox')
+
+function onMarkdownClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  if (target.tagName === 'IMG' && target.closest('.md-editor-preview')) {
+    lightbox.value?.open((target as HTMLImageElement).src)
+  }
+}
+
+async function handleUploadImg(files: File[], callback: (urls: string[]) => void) {
+  try {
+    const urls = await uploadImages(files)
+    callback(urls)
+  } catch {
+    toast.add({ title: 'Failed to upload image', color: 'error' })
+  }
+}
+
 const newComment = ref('')
 const postingComment = ref(false)
 
@@ -152,7 +197,22 @@ async function submitComment() {
               />
               Back
             </button>
-            <p class="text-[17px] sm:text-[19px] font-extrabold tracking-tight leading-snug">
+            <UInput
+              v-if="editingTitle"
+              v-model="titleDraft"
+              autofocus
+              size="lg"
+              :ui="{ base: 'text-[17px] sm:text-[19px] font-extrabold tracking-tight' }"
+              class="w-full"
+              @keydown.enter="submitTitle"
+              @keydown.esc="editingTitle = false"
+              @blur="submitTitle"
+            />
+            <p
+              v-else
+              class="text-[17px] sm:text-[19px] font-extrabold tracking-tight leading-snug cursor-text hover:opacity-80"
+              @click="startEditTitle"
+            >
               {{ card.title }}
             </p>
             <span
@@ -193,7 +253,10 @@ async function submitComment() {
           </div>
         </div>
 
-        <div class="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-7">
+        <div
+          class="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-7"
+          @click="onMarkdownClick"
+        >
           <div class="flex flex-col gap-2">
             <div class="flex items-center justify-between">
               <span class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted">Description</span>
@@ -210,6 +273,8 @@ async function submitComment() {
                 :preview="!isMobile"
                 :toolbars-exclude="['github', 'save']"
                 style="height: 260px"
+                :on-upload-img="handleUploadImg"
+                :no-img-zoom-in="true"
                 @update:model-value="onDescriptionChange"
               />
             </ClientOnly>
@@ -234,6 +299,7 @@ async function submitComment() {
             @add="handleAddSubtask"
             @toggle="handleToggleSubtask"
             @remove="handleRemoveSubtask"
+            @rename="handleRenameSubtask"
           />
 
           <TimeTracker
@@ -271,6 +337,7 @@ async function submitComment() {
                     language="en-US"
                     preview-theme="default"
                     class="text-[13px]"
+                    :no-img-zoom-in="true"
                   />
                 </ClientOnly>
               </div>
@@ -284,6 +351,8 @@ async function submitComment() {
                 :preview="!isMobile"
                 :toolbars-exclude="['github', 'save']"
                 style="height: 160px"
+                :on-upload-img="handleUploadImg"
+                :no-img-zoom-in="true"
               />
             </ClientOnly>
             <UButton
@@ -301,4 +370,5 @@ async function submitComment() {
       </div>
     </template>
   </UModal>
+  <ImageLightbox ref="lightbox" />
 </template>

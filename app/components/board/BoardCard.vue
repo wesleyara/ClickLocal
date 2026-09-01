@@ -1,8 +1,26 @@
 <script setup lang="ts">
 import type { BoardCard } from '~/composables/useBoardStore'
+import type { CardChildSummary } from '~/composables/useCard'
 
-defineProps<{ card: BoardCard }>()
+const props = defineProps<{ card: BoardCard }>()
 const emit = defineEmits<{ delete: [id: number], open: [id: number] }>()
+
+const expanded = ref(false)
+const children = ref<CardChildSummary[] | null>(null)
+const loadingChildren = ref(false)
+
+async function toggleExpanded() {
+  expanded.value = !expanded.value
+  if (expanded.value && children.value === null) {
+    loadingChildren.value = true
+    try {
+      const detail = await $fetch<{ children: CardChildSummary[] }>(`/api/cards/${props.card.id}`)
+      children.value = detail.children
+    } finally {
+      loadingChildren.value = false
+    }
+  }
+}
 </script>
 
 <template>
@@ -50,16 +68,21 @@ const emit = defineEmits<{ delete: [id: number], open: [id: number] }>()
         />
         {{ card.subtaskDoneCount }}/{{ card.subtaskCount }}
       </span>
-      <span
+      <button
         v-if="card.childCount > 0"
-        class="flex items-center gap-1"
+        class="flex items-center gap-1 hover:text-default"
+        @click.stop="toggleExpanded"
       >
         <UIcon
           name="i-lucide-git-branch"
           class="size-3"
         />
         {{ card.childCount }}
-      </span>
+        <UIcon
+          :name="expanded ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+          class="size-3"
+        />
+      </button>
       <span
         v-if="card.hasRunningTimer"
         class="flex items-center gap-1 text-primary font-semibold"
@@ -80,6 +103,40 @@ const emit = defineEmits<{ delete: [id: number], open: [id: number] }>()
         />
         {{ new Date(card.dueDate).toLocaleDateString() }}
       </span>
+    </div>
+
+    <div
+      v-if="expanded"
+      class="flex flex-col gap-1.5 -mx-1"
+      @click.stop
+    >
+      <p
+        v-if="loadingChildren"
+        class="text-[11.5px] text-muted px-1"
+      >
+        Carregando...
+      </p>
+      <template v-else>
+        <button
+          v-for="child in children"
+          :key="child.id"
+          class="flex items-center gap-1.5 rounded-lg px-2 py-1.5 bg-muted/60 hover:bg-muted text-left cursor-pointer"
+          @click.stop="emit('open', child.id)"
+        >
+          <UIcon
+            name="i-lucide-git-branch"
+            class="size-3 text-muted shrink-0"
+          />
+          <span
+            class="text-[12px] flex-1 truncate"
+            :class="child.archived ? 'line-through text-muted' : ''"
+          >{{ child.title }}</span>
+          <span
+            v-if="child.subtaskCount > 0"
+            class="text-[10.5px] text-muted shrink-0"
+          >{{ child.subtaskDoneCount }}/{{ child.subtaskCount }}</span>
+        </button>
+      </template>
     </div>
   </div>
 </template>
