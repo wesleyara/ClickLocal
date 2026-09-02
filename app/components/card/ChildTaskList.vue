@@ -3,8 +3,8 @@ import type { CardChildSummary } from '~/composables/useCard'
 
 defineProps<{ children: CardChildSummary[] }>()
 const emit = defineEmits<{
-  'add': [title: string]
-  'open-fullscreen': [id: number]
+  add: [title: string]
+  open: [id: number]
 }>()
 
 const adding = ref(false)
@@ -32,7 +32,7 @@ function submit() {
         v-for="child in children"
         :key="child.id"
         class="w-full flex items-center gap-2.5 px-2.5 py-2 border border-default rounded-lg hover:bg-elevated text-left"
-        @click="emit('open-fullscreen', child.id)"
+        @click="emit('open', child.id)"
       >
         <UIcon
           name="i-lucide-git-branch"

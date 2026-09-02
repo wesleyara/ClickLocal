@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { ActivityEntry } from '~/composables/useActivity'
 
-defineProps<{ entries: ActivityEntry[] }>()
+const props = defineProps<{ entries: ActivityEntry[] }>()
+
+const VISIBLE_LIMIT = 5
+const showAll = ref(false)
+const visibleEntries = computed(() => showAll.value ? props.entries : props.entries.slice(0, VISIBLE_LIMIT))
 
 function formatDuration(ms: number) {
   const totalMinutes = Math.round(ms / 60000)
@@ -71,7 +75,7 @@ function describe(entry: ActivityEntry): { icon: string, text: string } {
       class="flex flex-col gap-3.5"
     >
       <div
-        v-for="entry in entries"
+        v-for="entry in visibleEntries"
         :key="entry.id"
         class="flex gap-2.5"
       >
@@ -88,6 +92,18 @@ function describe(entry: ActivityEntry): { icon: string, text: string } {
           </div>
         </div>
       </div>
+
+      <button
+        v-if="entries.length > VISIBLE_LIMIT"
+        class="flex items-center gap-1 text-[12px] font-bold text-primary self-start"
+        @click="showAll = !showAll"
+      >
+        <UIcon
+          :name="showAll ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+          class="size-3.5"
+        />
+        {{ showAll ? 'Show less' : `Show more (${entries.length - VISIBLE_LIMIT})` }}
+      </button>
     </div>
   </div>
 </template>

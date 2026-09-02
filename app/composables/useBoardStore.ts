@@ -18,6 +18,7 @@ export interface BoardCard {
   childCount: number
   tags: BoardTag[]
   hasRunningTimer: boolean
+  runningTimerStartedAt: string | null
 }
 
 export interface BoardColumnWithCards {
@@ -75,12 +76,12 @@ export const useBoardStore = defineStore('board', {
     },
 
     async createCard(columnId: number, title: string) {
-      const card = await $fetch<Omit<BoardCard, 'subtaskCount' | 'subtaskDoneCount' | 'childCount' | 'tags' | 'hasRunningTimer'>>('/api/cards', {
+      const card = await $fetch<Omit<BoardCard, 'subtaskCount' | 'subtaskDoneCount' | 'childCount' | 'tags' | 'hasRunningTimer' | 'runningTimerStartedAt'>>('/api/cards', {
         method: 'POST',
         body: { columnId, title }
       })
       const column = this.columns.find(c => c.id === columnId)
-      if (column) column.cards.push({ ...card, subtaskCount: 0, subtaskDoneCount: 0, childCount: 0, tags: [], hasRunningTimer: false })
+      if (column) column.cards.push({ ...card, subtaskCount: 0, subtaskDoneCount: 0, childCount: 0, tags: [], hasRunningTimer: false, runningTimerStartedAt: null })
     },
 
     async deleteCard(id: number) {

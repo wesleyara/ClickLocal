@@ -21,9 +21,9 @@ const activeCardId = computed(() => stack.value.length ? stack.value[stack.value
 function goBack() {
   stack.value.pop()
 }
-function openChildFullscreen(id: number) {
+function openChild(id: number) {
+  // preserves whatever view (fullscreen or windowed) the modal is already in
   stack.value.push(id)
-  fullscreen.value = true
 }
 
 const {
@@ -177,7 +177,7 @@ async function submitComment() {
   <UModal
     v-model:open="open"
     :fullscreen="fullscreen"
-    :ui="{ content: fullscreen ? '' : 'sm:max-w-3xl' }"
+    :ui="{ content: fullscreen ? '' : 'sm:max-w-3xl lg:max-w-5xl' }"
   >
     <template #content="{ close }">
       <div
@@ -197,6 +197,9 @@ async function submitComment() {
               />
               Back
             </button>
+            <span class="inline-block text-[11px] font-bold font-mono text-muted mb-0.5">
+              #{{ card.id }}
+            </span>
             <UInput
               v-if="editingTitle"
               v-model="titleDraft"
@@ -254,118 +257,124 @@ async function submitComment() {
         </div>
 
         <div
-          class="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-7"
+          class="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5"
           @click="onMarkdownClick"
         >
-          <div class="flex flex-col gap-2">
-            <div class="flex items-center justify-between">
-              <span class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted">Description</span>
-              <span
-                v-if="savingDescription"
-                class="text-[11px] text-muted"
-              >Salvando...</span>
-            </div>
-            <ClientOnly>
-              <MdEditor
-                :model-value="descriptionDraft"
-                language="en-US"
-                preview-theme="default"
-                :preview="!isMobile"
-                :toolbars-exclude="['github', 'save']"
-                style="height: 260px"
-                :on-upload-img="handleUploadImg"
-                :no-img-zoom-in="true"
-                @update:model-value="onDescriptionChange"
-              />
-            </ClientOnly>
-          </div>
-
-          <TagPicker
-            :assigned-tags="card.tags"
-            :board-tags="boardTags"
-            @add="handleAddTag"
-            @remove="handleRemoveTag"
-            @create="handleCreateTag"
-          />
-
-          <ChildTaskList
-            :children="card.children"
-            @add="handleAddChildCard"
-            @open-fullscreen="openChildFullscreen"
-          />
-
-          <SubtaskList
-            :subtasks="card.subtasks"
-            @add="handleAddSubtask"
-            @toggle="handleToggleSubtask"
-            @remove="handleRemoveSubtask"
-            @rename="handleRenameSubtask"
-          />
-
-          <TimeTracker
-            :card-id="activeCardId"
-            @changed="refreshActivity"
-          />
-
-          <div class="flex flex-col gap-3">
-            <span class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted">
-              Comments &middot; {{ card.comments.length }}
-            </span>
-
-            <div class="flex flex-col gap-4">
-              <div
-                v-for="comment in card.comments"
-                :key="comment.id"
-                class="group flex flex-col gap-1.5"
-              >
+          <div class="flex flex-col gap-8 lg:grid lg:grid-cols-3 lg:gap-9 lg:items-start">
+            <div class="flex flex-col gap-8 lg:col-span-2 lg:min-w-0">
+              <div class="flex flex-col gap-2">
                 <div class="flex items-center justify-between">
-                  <span class="text-[11px] text-muted">
-                    {{ new Date(comment.createdAt).toLocaleString() }}
-                  </span>
-                  <UButton
-                    icon="i-lucide-trash-2"
-                    size="xs"
-                    color="neutral"
-                    variant="ghost"
-                    class="opacity-0 group-hover:opacity-100"
-                    @click="removeComment(comment.id)"
-                  />
+                  <span class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted">Description</span>
+                  <span
+                    v-if="savingDescription"
+                    class="text-[11px] text-muted"
+                  >Salvando...</span>
                 </div>
                 <ClientOnly>
-                  <MdPreview
-                    :model-value="comment.body"
+                  <MdEditor
+                    :model-value="descriptionDraft"
                     language="en-US"
                     preview-theme="default"
-                    class="text-[13px]"
+                    :preview="!isMobile"
+                    :toolbars-exclude="['github', 'save']"
+                    style="height: 300px"
+                    :on-upload-img="handleUploadImg"
                     :no-img-zoom-in="true"
+                    @update:model-value="onDescriptionChange"
                   />
                 </ClientOnly>
               </div>
+
+              <SubtaskList
+                :subtasks="card.subtasks"
+                @add="handleAddSubtask"
+                @toggle="handleToggleSubtask"
+                @remove="handleRemoveSubtask"
+                @rename="handleRenameSubtask"
+              />
+
+              <div class="flex flex-col gap-3">
+                <span class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted">
+                  Comments &middot; {{ card.comments.length }}
+                </span>
+
+                <div class="flex flex-col gap-4">
+                  <div
+                    v-for="comment in card.comments"
+                    :key="comment.id"
+                    class="group flex flex-col gap-1.5"
+                  >
+                    <div class="flex items-center justify-between">
+                      <span class="text-[11px] text-muted">
+                        {{ new Date(comment.createdAt).toLocaleString() }}
+                      </span>
+                      <UButton
+                        icon="i-lucide-trash-2"
+                        size="xs"
+                        color="neutral"
+                        variant="ghost"
+                        class="opacity-0 group-hover:opacity-100"
+                        @click="removeComment(comment.id)"
+                      />
+                    </div>
+                    <ClientOnly>
+                      <MdPreview
+                        :model-value="comment.body"
+                        language="en-US"
+                        preview-theme="default"
+                        class="text-[13px]"
+                        :no-img-zoom-in="true"
+                      />
+                    </ClientOnly>
+                  </div>
+                </div>
+
+                <ClientOnly>
+                  <MdEditor
+                    v-model="newComment"
+                    language="en-US"
+                    preview-theme="default"
+                    :preview="!isMobile"
+                    :toolbars-exclude="['github', 'save']"
+                    style="height: 160px"
+                    :on-upload-img="handleUploadImg"
+                    :no-img-zoom-in="true"
+                  />
+                </ClientOnly>
+                <UButton
+                  label="Comment"
+                  size="sm"
+                  class="self-end"
+                  :loading="postingComment"
+                  :disabled="!newComment.trim()"
+                  @click="submitComment"
+                />
+              </div>
             </div>
 
-            <ClientOnly>
-              <MdEditor
-                v-model="newComment"
-                language="en-US"
-                preview-theme="default"
-                :preview="!isMobile"
-                :toolbars-exclude="['github', 'save']"
-                style="height: 160px"
-                :on-upload-img="handleUploadImg"
-                :no-img-zoom-in="true"
+            <div class="flex flex-col gap-8 lg:col-span-1 lg:sticky lg:top-0">
+              <TagPicker
+                :assigned-tags="card.tags"
+                :board-tags="boardTags"
+                @add="handleAddTag"
+                @remove="handleRemoveTag"
+                @create="handleCreateTag"
               />
-            </ClientOnly>
-            <UButton
-              label="Comment"
-              size="sm"
-              class="self-end"
-              :loading="postingComment"
-              :disabled="!newComment.trim()"
-              @click="submitComment"
-            />
-          </div>
 
-          <ActivityFeed :entries="activityEntries" />
+              <TimeTracker
+                :card-id="activeCardId"
+                @changed="refreshActivity"
+              />
+
+              <ChildTaskList
+                :children="card.children"
+                @add="handleAddChildCard"
+                @open="openChild"
+              />
+
+              <ActivityFeed :entries="activityEntries" />
+            </div>
+          </div>
         </div>
       </div>
     </template>

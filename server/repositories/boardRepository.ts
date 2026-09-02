@@ -29,7 +29,7 @@ export const boardRepository = {
               include: {
                 subtasks: { select: { completed: true } },
                 tags: { include: { tag: true } },
-                timeEntries: { where: { endedAt: null }, select: { id: true } },
+                timeEntries: { where: { endedAt: null }, select: { id: true, startedAt: true } },
                 _count: { select: { children: { where: { archived: false } } } }
               }
             }

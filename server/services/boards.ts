@@ -57,7 +57,8 @@ export async function getBoardFull(id: number) {
         subtaskDoneCount: subtasks.filter(s => s.completed).length,
         childCount: _count.children,
         tags: tags.map(t => t.tag),
-        hasRunningTimer: timeEntries.length > 0
+        hasRunningTimer: timeEntries.length > 0,
+        runningTimerStartedAt: timeEntries[0]?.startedAt ?? null
       }))
     }))
   }

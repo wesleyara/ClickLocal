@@ -21,6 +21,34 @@ async function toggleExpanded() {
     }
   }
 }
+
+const now = ref(Date.now())
+let tickInterval: ReturnType<typeof setInterval> | undefined
+
+watchEffect(() => {
+  if (!import.meta.client) return
+  if (props.card.hasRunningTimer && props.card.runningTimerStartedAt) {
+    if (!tickInterval) {
+      now.value = Date.now()
+      tickInterval = setInterval(() => {
+        now.value = Date.now()
+      }, 1000)
+    }
+  } else if (tickInterval) {
+    clearInterval(tickInterval)
+    tickInterval = undefined
+  }
+})
+onUnmounted(() => clearInterval(tickInterval))
+
+const runningElapsed = computed(() => {
+  if (!props.card.runningTimerStartedAt) return null
+  const totalSeconds = Math.max(0, Math.floor((now.value - new Date(props.card.runningTimerStartedAt).getTime()) / 1000))
+  const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0')
+  const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0')
+  const s = String(totalSeconds % 60).padStart(2, '0')
+  return `${h}:${m}:${s}`
+})
 </script>
 
 <template>
@@ -85,13 +113,13 @@ async function toggleExpanded() {
       </button>
       <span
         v-if="card.hasRunningTimer"
-        class="flex items-center gap-1 text-primary font-semibold"
+        class="flex items-center gap-1 text-primary font-semibold font-mono"
       >
         <UIcon
           name="i-lucide-clock"
-          class="size-3"
+          class="size-3 animate-pulse"
         />
-        running
+        {{ runningElapsed }}
       </span>
       <span
         v-if="card.dueDate"
