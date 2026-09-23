@@ -31,6 +31,9 @@ const cards = computed({
   set: (value) => { storeColumn.value.cards = value }
 })
 
+// Only boards that already have ADO-synced cards or mapped columns show ADO options.
+const isAdoBoard = computed(() => store.columns.some(c => c.adoStateCategory || c.cards.some(card => card.ado)))
+
 const addingCard = ref(false)
 const newCardTitle = ref('')
 
@@ -142,7 +145,7 @@ defineExpose({
                 @click="editColor = color"
               />
             </div>
-            <div class="flex flex-col gap-1">
+            <div v-if="isAdoBoard" class="flex flex-col gap-1">
               <label class="text-[11px] font-bold text-muted">Estado no ADO</label>
               <USelect
                 v-model="editAdoStateCategory"

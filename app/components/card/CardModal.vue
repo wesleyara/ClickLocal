@@ -58,6 +58,12 @@ const parentBreadcrumbUrl = computed(() => {
   return workItemUrl(ado.project, ado.parentAdoId)
 })
 
+const boardStore = useBoardStore()
+const currentColumn = computed(() => {
+  const id = card.value?.columnId
+  return id ? boardStore.columns.find(c => c.id === id) ?? null : null
+})
+
 const { tags: boardTags, createTag } = useBoardTags(boardIdRef)
 const { entries: activityEntries, refresh: refreshActivity } = useActivity(activeCardId)
 
@@ -279,9 +285,22 @@ watch(commentsTab, async (tab) => {
                 <span v-else>{{ card.ado.parentType }} #{{ card.ado.parentAdoId }} {{ card.ado.parentTitle }}</span>
               </template>
             </div>
-            <span class="inline-block text-[11px] font-bold font-mono text-muted mb-0.5">
-              #{{ card.id }}
-            </span>
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="text-[11px] font-bold font-mono text-muted">
+                #{{ card.id }}
+              </span>
+              <span
+                v-if="currentColumn"
+                class="inline-flex items-center gap-1.5 text-[11px] font-bold rounded-full px-2 py-0.5"
+                :style="{ background: `${currentColumn.color}1f`, color: currentColumn.color }"
+              >
+                <span
+                  class="size-1.5 rounded-full"
+                  :style="{ background: currentColumn.color }"
+                />
+                {{ currentColumn.name }}
+              </span>
+            </div>
             <UInput
               v-if="editingTitle"
               v-model="titleDraft"
