@@ -15,20 +15,22 @@ model Board {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  columns BoardColumn[]
-  tags    Tag[]
+  columns       BoardColumn[]
+  tags          Tag[]
+  adoConnection AzureDevOpsConnection?
 
   @@map("boards")
 }
 
 model BoardColumn {
-  id        Int      @id @default(autoincrement())
-  boardId   Int      @map("board_id")
-  name      String
-  color     String   @default("#6d5ce8")
-  position  Int
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id               Int      @id @default(autoincrement())
+  boardId          Int      @map("board_id")
+  name             String
+  color            String   @default("#6d5ce8")
+  position         Int
+  adoStateCategory String?  @map("ado_state_category")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
   cards Card[]
@@ -48,15 +50,16 @@ model Card {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  column      BoardColumn  @relation(fields: [columnId], references: [id], onDelete: Cascade)
-  parent      Card?        @relation("CardChildren", fields: [parentId], references: [id], onDelete: Cascade)
-  children    Card[]       @relation("CardChildren")
+  column      BoardColumn        @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  parent      Card?              @relation("CardChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Card[]             @relation("CardChildren")
   subtasks    Subtask[]
   tags        CardTag[]
   timeEntries TimeEntry[]
   activity    ActivityLogEntry[]
   comments    Comment[]
   attachments Attachment[]
+  ado         AdoWorkItem?
 
   @@map("cards")
 }
@@ -76,11 +79,12 @@ model Attachment {
 }
 
 model Comment {
-  id        Int      @id @default(autoincrement())
-  cardId    Int      @map("card_id")
-  body      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           Int      @id @default(autoincrement())
+  cardId       Int      @map("card_id")
+  body         String
+  adoCommentId Int?     @map("ado_comment_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
@@ -126,15 +130,16 @@ model CardTag {
 }
 
 model TimeEntry {
-  id         Int       @id @default(autoincrement())
-  cardId     Int       @map("card_id")
-  startedAt  DateTime  @map("started_at")
-  endedAt    DateTime? @map("ended_at")
-  durationMs Int?      @map("duration_ms")
-  source     String
-  note       String?
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
+  id          Int       @id @default(autoincrement())
+  cardId      Int       @map("card_id")
+  startedAt   DateTime  @map("started_at")
+  endedAt     DateTime? @map("ended_at")
+  durationMs  Int?      @map("duration_ms")
+  source      String
+  note        String?
+  adoPushedAt DateTime? @map("ado_pushed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
@@ -151,4 +156,55 @@ model ActivityLogEntry {
   card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
   @@map("activity_log")
+}
+
+/// Singleton (id = 1): the one Azure DevOps org connection this local app talks to.
+model AzureDevOpsConnection {
+  id                   Int       @id @default(1)
+  orgUrl               String    @map("org_url")
+  pat                  String
+  writeMode            String    @default("readonly") @map("write_mode")
+  writeAllowedProjects String    @default("[]") @map("write_allowed_projects")
+  boardId              Int?      @unique @map("board_id")
+  userName             String?   @map("user_name")
+  lastSyncedAt         DateTime? @map("last_synced_at")
+
+  board Board? @relation(fields: [boardId], references: [id], onDelete: SetNull)
+
+  @@map("ado_connection")
+}
+
+/// 1:1 link between a local card and the Azure DevOps work item it mirrors.
+model AdoWorkItem {
+  cardId          Int      @id @map("card_id")
+  adoId           Int      @unique @map("ado_id")
+  rev             Int
+  project         String
+  type            String
+  state           String
+  stateCategory   String   @map("state_category")
+  descriptionHtml String?  @map("description_html")
+  url             String
+  parentAdoId     Int?     @map("parent_ado_id")
+  parentTitle     String?  @map("parent_title")
+  parentType      String?  @map("parent_type")
+  archivedBySync  Boolean  @default(false) @map("archived_by_sync")
+  syncedAt        DateTime @map("synced_at")
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@map("ado_work_items")
+}
+
+/// Per-project cache of a work item type's states, categories and Completed Work support.
+model AdoWorkItemType {
+  project               String
+  name                  String
+  color                 String?
+  statesJson            String   @map("states_json")
+  supportsCompletedWork Boolean  @map("supports_completed_work")
+  fetchedAt             DateTime @map("fetched_at")
+
+  @@id([project, name])
+  @@map("ado_work_item_types")
 }

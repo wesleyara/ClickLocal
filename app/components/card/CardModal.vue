@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import DOMPurify from 'dompurify'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 
 const props = defineProps<{ cardId: number | null, boardId: number }>()
 const emit = defineEmits<{ close: [] }>()
+
+const { refresh: refreshAdoConnection, workItemUrl } = useAdoConnection()
+refreshAdoConnection()
 
 const boardIdRef = toRef(props, 'boardId')
 
@@ -30,6 +34,7 @@ const {
   saveDescription,
   addComment,
   removeComment,
+  publishComment,
   addSubtask,
   toggleSubtask,
   renameSubtask,
@@ -41,6 +46,18 @@ const {
   saveTitle,
   uploadImages
 } = useCard(activeCardId)
+
+const sanitizedAdoDescription = computed(() => {
+  const html = card.value?.ado?.descriptionHtml
+  return html ? DOMPurify.sanitize(html) : ''
+})
+
+const parentBreadcrumbUrl = computed(() => {
+  const ado = card.value?.ado
+  if (!ado?.parentAdoId) return null
+  return workItemUrl(ado.project, ado.parentAdoId)
+})
+
 const { tags: boardTags, createTag } = useBoardTags(boardIdRef)
 const { entries: activityEntries, refresh: refreshActivity } = useActivity(activeCardId)
 
@@ -138,6 +155,7 @@ async function submitTitle() {
 }
 
 const toast = useToast()
+const { confirm } = useConfirm()
 const lightbox = useTemplateRef('lightbox')
 
 function onMarkdownClick(event: MouseEvent) {
@@ -170,6 +188,46 @@ async function submitComment() {
     postingComment.value = false
   }
 }
+
+async function handlePublishComment(commentId: number, body: string) {
+  const ok = await confirm({
+    title: 'Publicar comentário no Azure DevOps?',
+    description: body.length > 280 ? `${body.slice(0, 280)}…` : body,
+    confirmLabel: 'Publicar'
+  })
+  if (!ok) return
+  await publishComment(commentId)
+  await refreshActivity()
+}
+
+interface AdoDiscussionComment {
+  id: number
+  text: string
+  author: string
+  createdDate: string
+}
+
+const commentsTab = ref<'local' | 'ado'>('local')
+const adoDiscussion = ref<AdoDiscussionComment[]>([])
+const loadingAdoDiscussion = ref(false)
+const adoDiscussionError = ref<string | null>(null)
+
+watch(() => card.value?.id, () => {
+  commentsTab.value = 'local'
+})
+
+watch(commentsTab, async (tab) => {
+  if (tab !== 'ado' || !activeCardId.value) return
+  loadingAdoDiscussion.value = true
+  adoDiscussionError.value = null
+  try {
+    adoDiscussion.value = await $fetch<AdoDiscussionComment[]>(`/api/cards/${activeCardId.value}/ado-discussion`)
+  } catch (error) {
+    adoDiscussionError.value = (error as { data?: { statusMessage?: string } })?.data?.statusMessage ?? 'Falha ao carregar a Discussion do Azure DevOps'
+  } finally {
+    loadingAdoDiscussion.value = false
+  }
+})
 </script>
 
 <template>
@@ -196,6 +254,26 @@ async function submitComment() {
               />
               Back
             </button>
+            <div
+              v-if="card.ado"
+              class="flex items-center gap-1 text-[11px] font-bold text-muted mb-1 flex-wrap"
+            >
+              <span>{{ card.ado.project }}</span>
+              <template v-if="card.ado.parentAdoId">
+                <UIcon
+                  name="i-lucide-chevron-right"
+                  class="size-3"
+                />
+                <a
+                  v-if="parentBreadcrumbUrl"
+                  :href="parentBreadcrumbUrl"
+                  target="_blank"
+                  rel="noopener"
+                  class="hover:text-default hover:underline"
+                >{{ card.ado.parentType }} #{{ card.ado.parentAdoId }} {{ card.ado.parentTitle }}</a>
+                <span v-else>{{ card.ado.parentType }} #{{ card.ado.parentAdoId }} {{ card.ado.parentTitle }}</span>
+              </template>
+            </div>
             <span class="inline-block text-[11px] font-bold font-mono text-muted mb-0.5">
               #{{ card.id }}
             </span>
@@ -212,8 +290,9 @@ async function submitComment() {
             />
             <p
               v-else
-              class="text-[17px] sm:text-[19px] font-extrabold tracking-tight leading-snug cursor-text hover:opacity-80"
-              @click="startEditTitle"
+              class="text-[17px] sm:text-[19px] font-extrabold tracking-tight leading-snug"
+              :class="card.ado ? '' : 'cursor-text hover:opacity-80'"
+              @click="card.ado ? undefined : startEditTitle()"
             >
               {{ card.title }}
             </p>
@@ -229,6 +308,17 @@ async function submitComment() {
             </span>
           </div>
           <div class="flex items-center gap-1 shrink-0">
+            <UButton
+              v-if="card.ado"
+              icon="i-lucide-external-link"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              :to="workItemUrl(card.ado.project, card.ado.adoId) ?? undefined"
+              target="_blank"
+            >
+              <span class="hidden sm:inline">Abrir no ADO</span>
+            </UButton>
             <UButton
               :icon="card.archived ? 'i-lucide-archive-restore' : 'i-lucide-archive'"
               size="xs"
@@ -269,7 +359,13 @@ async function submitComment() {
                     class="text-[11px] text-muted"
                   >Salvando...</span>
                 </div>
+                <div
+                  v-if="card.ado"
+                  class="border border-default rounded-lg p-3 text-[13px] leading-relaxed [&_a]:text-primary [&_a]:underline [&_img]:max-w-full [&_img]:rounded-md"
+                  v-html="sanitizedAdoDescription || '<p class=\'text-muted\'>Sem descrição</p>'"
+                />
                 <MarkdownEditor
+                  v-else
                   :model-value="descriptionDraft"
                   height="300px"
                   :on-upload-img="handleUploadImg"
@@ -286,55 +382,137 @@ async function submitComment() {
               />
 
               <div class="flex flex-col gap-3">
-                <span class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted">
+                <div
+                  v-if="card.ado"
+                  class="flex items-center gap-4 border-b border-default"
+                >
+                  <button
+                    class="text-[11.5px] font-extrabold uppercase tracking-wide pb-2 -mb-px border-b-2"
+                    :class="commentsTab === 'local' ? 'text-default border-primary' : 'text-muted border-transparent'"
+                    @click="commentsTab = 'local'"
+                  >
+                    Comments &middot; {{ card.comments.length }}
+                  </button>
+                  <button
+                    class="text-[11.5px] font-extrabold uppercase tracking-wide pb-2 -mb-px border-b-2"
+                    :class="commentsTab === 'ado' ? 'text-default border-primary' : 'text-muted border-transparent'"
+                    @click="commentsTab = 'ado'"
+                  >
+                    Discussion (ADO)
+                  </button>
+                </div>
+                <span
+                  v-else
+                  class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted"
+                >
                   Comments &middot; {{ card.comments.length }}
                 </span>
 
-                <div class="flex flex-col gap-4">
-                  <div
-                    v-for="comment in card.comments"
-                    :key="comment.id"
-                    class="group flex flex-col gap-1.5"
+                <template v-if="commentsTab === 'ado' && card.ado">
+                  <p
+                    v-if="loadingAdoDiscussion"
+                    class="text-[12.5px] text-muted"
                   >
-                    <div class="flex items-center justify-between">
+                    Carregando...
+                  </p>
+                  <p
+                    v-else-if="adoDiscussionError"
+                    class="text-[12.5px] text-error"
+                  >
+                    {{ adoDiscussionError }}
+                  </p>
+                  <p
+                    v-else-if="adoDiscussion.length === 0"
+                    class="text-[12.5px] text-muted"
+                  >
+                    Nenhum comentário no Azure DevOps.
+                  </p>
+                  <div
+                    v-else
+                    class="flex flex-col gap-4"
+                  >
+                    <div
+                      v-for="discussionComment in adoDiscussion"
+                      :key="discussionComment.id"
+                      class="flex flex-col gap-1.5"
+                    >
                       <span class="text-[11px] text-muted">
-                        {{ new Date(comment.createdAt).toLocaleString() }}
+                        {{ discussionComment.author }} &middot; {{ new Date(discussionComment.createdDate).toLocaleString() }}
                       </span>
-                      <UButton
-                        icon="i-lucide-trash-2"
-                        size="xs"
-                        color="neutral"
-                        variant="ghost"
-                        class="opacity-0 group-hover:opacity-100"
-                        @click="removeComment(comment.id)"
+                      <div
+                        class="text-[13px] leading-relaxed [&_a]:text-primary [&_a]:underline"
+                        v-html="DOMPurify.sanitize(discussionComment.text)"
                       />
                     </div>
-                    <ClientOnly>
-                      <MdPreview
-                        :model-value="comment.body"
-                        language="en-US"
-                        preview-theme="default"
-                        class="text-[13px]"
-                        :no-img-zoom-in="true"
-                        :show-code-row-number="true"
-                      />
-                    </ClientOnly>
                   </div>
-                </div>
+                </template>
 
-                <MarkdownEditor
-                  v-model="newComment"
-                  height="160px"
-                  :on-upload-img="handleUploadImg"
-                />
-                <UButton
-                  label="Comment"
-                  size="sm"
-                  class="self-end"
-                  :loading="postingComment"
-                  :disabled="!newComment.trim()"
-                  @click="submitComment"
-                />
+                <template v-else>
+                  <div class="flex flex-col gap-4">
+                    <div
+                      v-for="comment in card.comments"
+                      :key="comment.id"
+                      class="group flex flex-col gap-1.5"
+                    >
+                      <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-2 text-[11px] text-muted">
+                          {{ new Date(comment.createdAt).toLocaleString() }}
+                          <span
+                            v-if="comment.adoCommentId"
+                            class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 rounded-md px-1.5 py-0.5"
+                          >
+                            <UIcon
+                              name="i-lucide-check"
+                              class="size-2.5"
+                            />
+                            Publicado
+                          </span>
+                        </span>
+                        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                          <UButton
+                            v-if="card.ado && !comment.adoCommentId"
+                            label="Publicar no ADO"
+                            size="xs"
+                            color="neutral"
+                            variant="ghost"
+                            @click="handlePublishComment(comment.id, comment.body)"
+                          />
+                          <UButton
+                            icon="i-lucide-trash-2"
+                            size="xs"
+                            color="neutral"
+                            variant="ghost"
+                            @click="removeComment(comment.id)"
+                          />
+                        </div>
+                      </div>
+                      <ClientOnly>
+                        <MdPreview
+                          :model-value="comment.body"
+                          language="en-US"
+                          preview-theme="default"
+                          class="text-[13px]"
+                          :no-img-zoom-in="true"
+                          :show-code-row-number="true"
+                        />
+                      </ClientOnly>
+                    </div>
+                  </div>
+
+                  <MarkdownEditor
+                    v-model="newComment"
+                    height="160px"
+                    :on-upload-img="handleUploadImg"
+                  />
+                  <UButton
+                    label="Comment"
+                    size="sm"
+                    class="self-end"
+                    :loading="postingComment"
+                    :disabled="!newComment.trim()"
+                    @click="submitComment"
+                  />
+                </template>
               </div>
             </div>
 
@@ -349,6 +527,7 @@ async function submitComment() {
 
               <TimeTracker
                 :card-id="activeCardId"
+                :ado="card.ado"
                 @changed="refreshActivity"
               />
 

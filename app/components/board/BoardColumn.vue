@@ -8,10 +8,16 @@ const props = withDefaults(defineProps<{
 }>(), {
   filter: () => true
 })
+export interface CardMove {
+  cardId: number
+  fromColumnId: number
+  toColumnId: number
+}
+
 const emit = defineEmits<{
   'delete-card': [id: number]
   'delete-column': [id: number]
-  'cards-changed': []
+  'cards-changed': [move: CardMove | undefined]
   'open-card': [id: number]
 }>()
 
@@ -33,17 +39,27 @@ const PALETTE = ['#6d5ce8', '#2f9e8f', '#c17a1f', '#dc4c4c', '#3b82f6', '#16a34a
 const editing = ref(false)
 const editName = ref('')
 const editColor = ref('')
+const editAdoStateCategory = ref<string | null>(null)
+
+const ADO_STATE_CATEGORIES = [
+  { label: 'Nenhum', value: null },
+  { label: 'Proposed', value: 'Proposed' },
+  { label: 'InProgress', value: 'InProgress' },
+  { label: 'Resolved', value: 'Resolved' },
+  { label: 'Completed', value: 'Completed' }
+]
 
 function openEdit() {
   editName.value = props.column.name
   editColor.value = props.column.color
+  editAdoStateCategory.value = props.column.adoStateCategory
   editing.value = true
 }
 
 async function saveEdit() {
   const name = editName.value.trim()
   if (!name) return
-  await store.updateColumn(props.column.id, { name, color: editColor.value })
+  await store.updateColumn(props.column.id, { name, color: editColor.value, adoStateCategory: editAdoStateCategory.value })
   editing.value = false
 }
 
@@ -56,6 +72,18 @@ async function submitNewCard() {
   await store.createCard(props.column.id, title)
   newCardTitle.value = ''
   addingCard.value = false
+}
+
+function handleDragEnd(event: { item?: HTMLElement, from?: HTMLElement, to?: HTMLElement }) {
+  const fromColumnId = Number(event.from?.dataset.columnId)
+  const toColumnId = Number(event.to?.dataset.columnId)
+  const cardId = Number(event.item?.dataset.cardId)
+
+  const move = Number.isFinite(fromColumnId) && Number.isFinite(toColumnId) && Number.isFinite(cardId) && fromColumnId !== toColumnId
+    ? { cardId, fromColumnId, toColumnId }
+    : undefined
+
+  emit('cards-changed', move)
 }
 
 defineExpose({
@@ -80,6 +108,17 @@ defineExpose({
           />
           <span class="text-[13px] font-bold truncate">{{ column.name }}</span>
           <span
+            v-if="column.adoStateCategory"
+            class="text-[10px] font-bold rounded-md px-1.5 py-0.5 shrink-0 bg-primary/10 text-primary flex items-center gap-1"
+            :title="`Mapeada para ${column.adoStateCategory} no Azure DevOps`"
+          >
+            <UIcon
+              name="i-lucide-plug-zap"
+              class="size-2.5"
+            />
+            {{ column.adoStateCategory }}
+          </span>
+          <span
             class="text-[11px] font-bold rounded-md px-1.5 py-0.5 shrink-0"
             :style="{ color: column.color, background: `${column.color}1a` }"
           >{{ column.cards.length }}</span>
@@ -103,6 +142,15 @@ defineExpose({
                 @click="editColor = color"
               />
             </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-[11px] font-bold text-muted">Estado no ADO</label>
+              <USelect
+                v-model="editAdoStateCategory"
+                :items="ADO_STATE_CATEGORIES"
+                value-key="value"
+                size="sm"
+              />
+            </div>
             <UButton
               label="Salvar"
               size="xs"
@@ -124,14 +172,16 @@ defineExpose({
 
     <VueDraggable
       v-model="cards"
+      :data-column-id="column.id"
       :group="{ name: 'cards', pull: true, put: true }"
       class="flex flex-col gap-2.5 min-h-[6px] flex-1 overflow-y-auto -me-1 pe-1"
       ghost-class="opacity-40"
-      @end="emit('cards-changed')"
+      @end="handleDragEnd"
     >
       <BoardCard
         v-for="card in cards"
         :key="card.id"
+        :data-card-id="card.id"
         :card="card"
         :class="{ hidden: !filter(card) }"
         @delete="emit('delete-card', $event)"

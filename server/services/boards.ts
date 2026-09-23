@@ -49,16 +49,18 @@ export async function getBoardFull(id: number) {
   const { columns, ...rest } = board
   return {
     board: rest,
-    columns: columns.map(column => ({
+    columns: columns.map(({ adoStateCategory, ...column }) => ({
       ...column,
-      cards: column.cards.map(({ subtasks, tags, timeEntries, _count, ...card }) => ({
+      adoStateCategory,
+      cards: column.cards.map(({ subtasks, tags, timeEntries, _count, ado, ...card }) => ({
         ...card,
         subtaskCount: subtasks.length,
         subtaskDoneCount: subtasks.filter(s => s.completed).length,
         childCount: _count.children,
         tags: tags.map(t => t.tag),
         hasRunningTimer: timeEntries.length > 0,
-        runningTimerStartedAt: timeEntries[0]?.startedAt ?? null
+        runningTimerStartedAt: timeEntries[0]?.startedAt ?? null,
+        ado
       }))
     }))
   }

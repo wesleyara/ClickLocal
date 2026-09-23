@@ -18,6 +18,10 @@ export type ActivityEventType
     | 'comment_added'
     | 'time_entry_added'
     | 'child_card_added'
+    | 'ado_synced_changes'
+    | 'ado_state_pushed'
+    | 'ado_hours_pushed'
+    | 'ado_comment_published'
 
 /** Server-only activity log write — never exposed as a client-callable route, so the history stays trustworthy. */
 export function logActivity(cardId: number, eventType: ActivityEventType, payload: Record<string, unknown> | undefined, client: DbClient) {

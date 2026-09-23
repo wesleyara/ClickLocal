@@ -37,6 +37,15 @@ useSeoMeta({
 
       <template #right>
         <BoardSwitcher />
+        <UButton
+          to="/settings/azure-devops"
+          icon="i-lucide-plug-zap"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+        >
+          <span class="hidden sm:inline">Azure DevOps</span>
+        </UButton>
         <UColorModeButton />
       </template>
     </UHeader>

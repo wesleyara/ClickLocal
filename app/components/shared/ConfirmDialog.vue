@@ -13,6 +13,7 @@ function resolve(value: boolean) {
     v-model:open="state.open"
     :title="state.title"
     :description="state.description"
+    :ui="{ overlay: 'z-[60]', content: 'z-[60]' }"
     @update:open="(value) => { if (!value) resolve(false) }"
   >
     <template #footer>
