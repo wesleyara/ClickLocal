@@ -1,5 +1,7 @@
 import type { Prisma } from '@prisma/client'
+import { azureDevOpsRepository } from '../repositories/azureDevOpsRepository'
 import { cardRepository } from '../repositories/cardRepository'
+import { pushStateForMoves } from './azureDevOps/state'
 import { logActivity } from '../utils/activity'
 import { db } from '../utils/db'
 import { nextPosition } from '../utils/position'
@@ -8,9 +10,14 @@ export async function getCard(id: number) {
   const card = await cardRepository.findByIdWithRelations(id)
   if (!card) return null
 
-  const { tags, children, ...rest } = card
+  const { tags, children, ado, ...rest } = card
+  const adoWithType = ado
+    ? { ...ado, supportsCompletedWork: (await azureDevOpsRepository.findType(ado.project, ado.type))?.supportsCompletedWork ?? true }
+    : null
+
   return {
     ...rest,
+    ado: adoWithType,
     tags: tags.map(t => t.tag),
     children: children.map(({ tags: childTags, subtasks, _count, ...child }) => ({
       ...child,
@@ -69,9 +76,11 @@ export async function updateCard(id: number, input: {
   const existing = await cardRepository.findById(id)
   if (!existing) throw new Error('Card not found')
 
+  const linked = await azureDevOpsRepository.findWorkItemByCardId(id)
+
   const data: Prisma.CardUpdateInput = {}
-  if (input.title !== undefined) data.title = input.title.trim()
-  if (input.description !== undefined) data.description = input.description || null
+  if (input.title !== undefined && !linked) data.title = input.title.trim()
+  if (input.description !== undefined && !linked) data.description = input.description || null
   if (input.columnId !== undefined) data.column = { connect: { id: input.columnId } }
   if (input.position !== undefined) data.position = input.position
   if (input.dueDate !== undefined) data.dueDate = input.dueDate ? new Date(input.dueDate) : null
@@ -102,22 +111,48 @@ export async function updateCard(id: number, input: {
   })
 }
 
+export class LinkedCardError extends Error {}
+
 export async function deleteCard(id: number) {
+  const linked = await azureDevOpsRepository.findWorkItemByCardId(id)
+  if (linked) {
+    throw new LinkedCardError('Card vinculado ao Azure DevOps não pode ser excluído, só arquivado')
+  }
   await cardRepository.delete(id)
 }
 
 export async function reorderCards(updates: { id: number, columnId: number, position: number }[]) {
   const existing = await cardRepository.findManyByIds(updates.map(u => u.id))
-  const previousColumnById = new Map(existing.map(c => [c.id, c.columnId]))
+  const previousById = new Map(existing.map(c => [c.id, c]))
 
-  return db.$transaction(async (tx) => {
-    await cardRepository.updatePositions(updates, tx)
+  const moves = updates
+    .map(u => ({ cardId: u.id, fromColumnId: previousById.get(u.id)?.columnId, toColumnId: u.columnId }))
+    .filter((m): m is { cardId: number, fromColumnId: number, toColumnId: number } => m.fromColumnId !== undefined)
 
-    for (const update of updates) {
-      const fromColumnId = previousColumnById.get(update.id)
-      if (fromColumnId !== undefined && fromColumnId !== update.columnId) {
-        await logActivity(update.id, 'moved_column', { fromColumnId, toColumnId: update.columnId }, tx)
+  const { failures } = await pushStateForMoves(moves)
+  const failedIds = new Set(failures.map(f => f.cardId))
+
+  const applied = updates.filter(u => !failedIds.has(u.id))
+  const reverted = updates.filter(u => failedIds.has(u.id))
+
+  await db.$transaction(async (tx) => {
+    if (applied.length > 0) await cardRepository.updatePositions(applied, tx)
+
+    for (const update of applied) {
+      const previous = previousById.get(update.id)
+      if (previous && previous.columnId !== update.columnId) {
+        await logActivity(update.id, 'moved_column', { fromColumnId: previous.columnId, toColumnId: update.columnId }, tx)
       }
     }
+
+    for (const update of reverted) {
+      const previous = previousById.get(update.id)!
+      await cardRepository.update(update.id, {
+        column: { connect: { id: previous.columnId } },
+        position: previous.position
+      }, tx)
+    }
   })
+
+  return { failures }
 }

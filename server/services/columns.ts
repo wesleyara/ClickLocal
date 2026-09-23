@@ -12,10 +12,11 @@ export async function createColumn(boardId: number, input: { name: string }) {
   })
 }
 
-export function updateColumn(id: number, input: { name?: string, color?: string }) {
+export function updateColumn(id: number, input: { name?: string, color?: string, adoStateCategory?: string | null }) {
   const data: Prisma.BoardColumnUpdateInput = {}
   if (input.name !== undefined) data.name = input.name.trim()
   if (input.color !== undefined) data.color = input.color
+  if (input.adoStateCategory !== undefined) data.adoStateCategory = input.adoStateCategory
 
   return columnRepository.update(id, data)
 }

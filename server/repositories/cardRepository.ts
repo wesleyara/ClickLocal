@@ -16,6 +16,7 @@ export const cardRepository = {
         tags: { include: { tag: true } },
         timeEntries: { orderBy: { startedAt: 'desc' } },
         parent: { select: { id: true, title: true } },
+        ado: true,
         children: {
           where: { archived: false },
           orderBy: { position: 'asc' },
@@ -35,7 +36,7 @@ export const cardRepository = {
   },
 
   findManyByIds(ids: number[]) {
-    return db.card.findMany({ where: { id: { in: ids } }, select: { id: true, columnId: true } })
+    return db.card.findMany({ where: { id: { in: ids } }, select: { id: true, columnId: true, position: true } })
   },
 
   findLastByPosition(columnId: number) {

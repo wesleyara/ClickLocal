@@ -1,4 +1,4 @@
-import { stopTimer, updateManualEntry } from '../../services/timeEntries'
+import { PushedTimeEntryError, stopTimer, updateManualEntry } from '../../services/timeEntries'
 
 interface Body {
   stop?: boolean
@@ -16,7 +16,10 @@ export default defineEventHandler(async (event) => {
       return await stopTimer(id)
     }
     return await updateManualEntry(id, body)
-  } catch {
+  } catch (error) {
+    if (error instanceof PushedTimeEntryError) {
+      throw createError({ statusCode: 409, statusMessage: error.message })
+    }
     throw createError({ statusCode: 404, statusMessage: 'Time entry not found' })
   }
 })

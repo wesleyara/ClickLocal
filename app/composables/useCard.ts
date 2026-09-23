@@ -2,6 +2,7 @@ export interface CardComment {
   id: number
   cardId: number
   body: string
+  adoCommentId: number | null
   createdAt: string
   updatedAt: string
 }
@@ -38,6 +39,19 @@ export interface CardChildSummary {
   childCount: number
 }
 
+export interface CardAdoSummary {
+  adoId: number
+  project: string
+  type: string
+  state: string
+  descriptionHtml: string | null
+  url: string
+  parentAdoId: number | null
+  parentTitle: string | null
+  parentType: string | null
+  supportsCompletedWork: boolean
+}
+
 export interface CardDetail {
   id: number
   columnId: number
@@ -51,6 +65,7 @@ export interface CardDetail {
   tags: CardTag[]
   parent: CardParentSummary | null
   children: CardChildSummary[]
+  ado: CardAdoSummary | null
 }
 
 export function useCard(id: Ref<number | null>) {
@@ -97,6 +112,16 @@ export function useCard(id: Ref<number | null>) {
     if (!card.value) return
     await $fetch(`/api/comments/${commentId}`, { method: 'DELETE' })
     card.value.comments = card.value.comments.filter(c => c.id !== commentId)
+  }
+
+  async function publishComment(commentId: number) {
+    if (!card.value) return
+    const result = await $fetch<{ dryRun: boolean, adoCommentId: number | null }>(`/api/comments/${commentId}/publish`, { method: 'POST' })
+    if (!result.dryRun) {
+      const comment = card.value.comments.find(c => c.id === commentId)
+      if (comment) comment.adoCommentId = result.adoCommentId
+    }
+    return result
   }
 
   async function addSubtask(title: string) {
@@ -185,6 +210,7 @@ export function useCard(id: Ref<number | null>) {
     saveTitle,
     addComment,
     removeComment,
+    publishComment,
     addSubtask,
     toggleSubtask,
     renameSubtask,

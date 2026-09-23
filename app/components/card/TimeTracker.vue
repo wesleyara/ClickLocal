@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const props = defineProps<{ cardId: number | null }>()
+import type { CardAdoSummary } from '~/composables/useCard'
+
+const props = defineProps<{ cardId: number | null, ado?: CardAdoSummary | null }>()
 const emit = defineEmits<{ changed: [] }>()
 
 const cardIdRef = toRef(props, 'cardId')
@@ -62,6 +64,17 @@ async function submitManual() {
     <span class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted">
       Time tracked &middot; {{ formatTotal(totalMs) }}
     </span>
+
+    <p
+      v-if="ado && !ado.supportsCompletedWork"
+      class="flex items-center gap-1.5 text-[11.5px] text-muted bg-muted/60 rounded-lg px-2.5 py-2"
+    >
+      <UIcon
+        name="i-lucide-info"
+        class="size-3.5 shrink-0"
+      />
+      Este tipo não tem Completed Work; horas ficam só locais.
+    </p>
 
     <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -176,7 +189,14 @@ async function submitManual() {
         </div>
         <div class="flex items-center gap-2">
           <span class="font-semibold">{{ entry.durationMs !== null ? formatTotal(entry.durationMs) : '—' }}</span>
+          <UIcon
+            v-if="entry.adoPushedAt"
+            name="i-lucide-lock"
+            class="size-3 text-muted"
+            title="Já enviado ao Azure DevOps"
+          />
           <UButton
+            v-else
             icon="i-lucide-x"
             size="xs"
             color="neutral"
