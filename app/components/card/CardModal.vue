@@ -85,21 +85,26 @@ async function handleAddChildCard(title: string) {
 
 const descriptionDraft = ref('')
 const savingDescription = ref(false)
-let descriptionTimer: ReturnType<typeof setTimeout> | undefined
+const descriptionDirty = ref(false)
 
 watch(() => card.value?.id, () => {
   descriptionDraft.value = card.value?.description ?? ''
+  descriptionDirty.value = false
   editingTitle.value = false
 })
 
 function onDescriptionChange(value: string) {
   descriptionDraft.value = value
+  descriptionDirty.value = value !== (card.value?.description ?? '')
+}
+
+async function submitDescription() {
+  if (!descriptionDirty.value) return
   savingDescription.value = true
-  clearTimeout(descriptionTimer)
-  descriptionTimer = setTimeout(async () => {
-    await saveDescription(value)
-    savingDescription.value = false
-  }, 600)
+  await saveDescription(descriptionDraft.value)
+  descriptionDirty.value = false
+  savingDescription.value = false
+  await refreshActivity()
 }
 
 async function handleAddTag(tag: Parameters<typeof addTag>[0]) {
@@ -354,10 +359,18 @@ watch(commentsTab, async (tab) => {
               <div class="flex flex-col gap-2">
                 <div class="flex items-center justify-between">
                   <span class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted">Description</span>
-                  <span
-                    v-if="savingDescription"
-                    class="text-[11px] text-muted"
-                  >Salvando...</span>
+                  <UButton
+                    v-if="!card.ado"
+                    label="Salvar"
+                    icon="i-lucide-check"
+                    size="xs"
+                    :color="descriptionDirty ? 'primary' : 'neutral'"
+                    :variant="descriptionDirty ? 'soft' : 'ghost'"
+                    :loading="savingDescription"
+                    :disabled="!descriptionDirty"
+                    class="disabled:opacity-40"
+                    @click="submitDescription"
+                  />
                 </div>
                 <div
                   v-if="card.ado"

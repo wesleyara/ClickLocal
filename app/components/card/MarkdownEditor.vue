@@ -179,3 +179,15 @@ const insertItems = [
     </ClientOnly>
   </div>
 </template>
+
+<style scoped>
+/*
+ * md-editor-v3's own `.md-editor-previewOnly` rule sets `overflow: visible`
+ * directly on the MdPreview root (same specificity as, and loaded after,
+ * our `overflow-y-auto` class), so long content bleeds past the fixed
+ * height into whatever sits below it instead of scrolling internally.
+ */
+:deep(.md-editor-previewOnly) {
+  overflow-y: auto !important;
+}
+</style>
