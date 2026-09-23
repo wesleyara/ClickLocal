@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { MdEditor, MdPreview } from 'md-editor-v3'
+import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 
 const props = defineProps<{ cardId: number | null, boardId: number }>()
 const emit = defineEmits<{ close: [] }>()
 
 const boardIdRef = toRef(props, 'boardId')
-const isMobile = useIsMobile()
 
 // local stack of card ids for pushing into a subtask card's own detail without
 // touching the route — the root entry mirrors props.cardId, deeper entries are
@@ -270,19 +269,12 @@ async function submitComment() {
                     class="text-[11px] text-muted"
                   >Salvando...</span>
                 </div>
-                <ClientOnly>
-                  <MdEditor
-                    :model-value="descriptionDraft"
-                    language="en-US"
-                    preview-theme="default"
-                    :preview="!isMobile"
-                    :toolbars-exclude="['github', 'save']"
-                    style="height: 300px"
-                    :on-upload-img="handleUploadImg"
-                    :no-img-zoom-in="true"
-                    @update:model-value="onDescriptionChange"
-                  />
-                </ClientOnly>
+                <MarkdownEditor
+                  :model-value="descriptionDraft"
+                  height="300px"
+                  :on-upload-img="handleUploadImg"
+                  @update:model-value="onDescriptionChange"
+                />
               </div>
 
               <SubtaskList
@@ -324,23 +316,17 @@ async function submitComment() {
                         preview-theme="default"
                         class="text-[13px]"
                         :no-img-zoom-in="true"
+                        :show-code-row-number="true"
                       />
                     </ClientOnly>
                   </div>
                 </div>
 
-                <ClientOnly>
-                  <MdEditor
-                    v-model="newComment"
-                    language="en-US"
-                    preview-theme="default"
-                    :preview="!isMobile"
-                    :toolbars-exclude="['github', 'save']"
-                    style="height: 160px"
-                    :on-upload-img="handleUploadImg"
-                    :no-img-zoom-in="true"
-                  />
-                </ClientOnly>
+                <MarkdownEditor
+                  v-model="newComment"
+                  height="160px"
+                  :on-upload-img="handleUploadImg"
+                />
                 <UButton
                   label="Comment"
                   size="sm"

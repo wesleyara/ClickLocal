@@ -4,3 +4,17 @@
 @theme static {
   --font-sans: 'Manrope', sans-serif;
 }
+
+/* md-editor-v3 ships github-markdown-css scoped to `.md-editor-preview`, but Tailwind's
+ * preflight zeroes list-style / font-weight globally and wins by source order, so markdown
+ * lists and bold text render as plain unstyled text. Restore just those two properties —
+ * `revert` on border/margin/padding also jumps past the library's own table/blockquote
+ * styles back to raw browser defaults, which is worse, so it's deliberately not used here. */
+:where(.md-editor-preview) :where(ul, ol) {
+  list-style: revert;
+  padding-left: 1.5em;
+}
+
+:where(.md-editor-preview) :where(strong, b) {
+  font-weight: 600;
+}

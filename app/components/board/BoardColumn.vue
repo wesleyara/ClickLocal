@@ -65,7 +65,7 @@ defineExpose({
 
 <template>
   <div
-    class="w-[85vw] max-w-[300px] sm:w-[272px] shrink-0 snap-start flex flex-col gap-3 border rounded-2xl p-2.5 shadow-xs"
+    class="w-[85vw] max-w-[300px] sm:w-[272px] shrink-0 snap-start flex flex-col gap-3 border rounded-2xl p-2.5 shadow-xs h-full max-h-full overflow-hidden"
     :style="{ 'background': `${column.color}0f`, 'border-color': `${column.color}33`, '--column-color': column.color }"
   >
     <div class="drag-handle flex items-center justify-between px-1 pt-0.5 cursor-grab active:cursor-grabbing">
@@ -125,7 +125,7 @@ defineExpose({
     <VueDraggable
       v-model="cards"
       :group="{ name: 'cards', pull: true, put: true }"
-      class="flex flex-col gap-2.5 min-h-[6px]"
+      class="flex flex-col gap-2.5 min-h-[6px] flex-1 overflow-y-auto -me-1 pe-1"
       ghost-class="opacity-40"
       @end="emit('cards-changed')"
     >

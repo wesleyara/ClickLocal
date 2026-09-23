@@ -85,8 +85,11 @@ defineShortcuts({
 </script>
 
 <template>
-  <div v-if="store.board">
-    <div class="flex flex-col gap-3 px-4 sm:px-8 py-3 sm:py-4 border-b border-default">
+  <div
+    v-if="store.board"
+    class="flex flex-col h-[calc(100dvh-var(--ui-header-height))]"
+  >
+    <div class="shrink-0 flex flex-col gap-3 px-4 sm:px-8 py-3 sm:py-4 border-b border-default">
       <div class="flex items-center gap-3">
         <NuxtLink
           to="/"
@@ -158,7 +161,7 @@ defineShortcuts({
       v-model="store.columns"
       :group="{ name: 'columns' }"
       handle=".drag-handle"
-      class="flex gap-4 px-4 sm:px-8 py-4 sm:py-6 items-start overflow-x-auto snap-x snap-proximity bg-muted/40 min-h-[calc(100vh-65px)]"
+      class="flex-1 min-h-0 flex gap-4 px-4 sm:px-8 py-4 sm:py-6 items-start overflow-x-auto snap-x snap-proximity bg-muted/40"
       @end="store.persistColumnOrder()"
     >
       <BoardColumn
