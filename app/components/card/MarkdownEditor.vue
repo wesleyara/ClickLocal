@@ -17,6 +17,17 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const viewMode = ref<'editor' | 'preview'>('editor')
 const editorRef = useTemplateRef('editorRef')
+const previewFullscreen = ref(false)
+const lightbox = useTemplateRef('lightbox')
+
+// The fullscreen preview lives in its own portal, so image clicks never reach
+// the parent's lightbox handler — open our own instead.
+function onFullscreenClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  if (target.tagName === 'IMG' && target.closest('.md-editor-preview')) {
+    lightbox.value?.open((target as HTMLImageElement).src)
+  }
+}
 
 function run(generator: InsertGenerator) {
   editorRef.value?.insert(generator)
@@ -148,6 +159,16 @@ const insertItems = [
           :variant="viewMode === 'preview' ? 'solid' : 'ghost'"
           @click="viewMode = 'preview'"
         />
+        <div class="w-px h-4 bg-default mx-0.5" />
+        <UTooltip text="Expand preview">
+          <UButton
+            icon="i-lucide-maximize-2"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            @click="previewFullscreen = true"
+          />
+        </UTooltip>
       </div>
     </div>
 
@@ -178,6 +199,42 @@ const insertItems = [
         :style="{ height: props.height }"
       />
     </ClientOnly>
+
+    <UModal
+      v-model:open="previewFullscreen"
+      fullscreen
+    >
+      <template #content="{ close }">
+        <div class="flex flex-col flex-1 min-h-0">
+          <div class="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 border-b border-default">
+            <span class="text-[11px] font-bold uppercase tracking-wide text-muted">Preview</span>
+            <UButton
+              icon="i-lucide-minimize-2"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="close"
+            />
+          </div>
+          <div
+            class="flex-1 min-h-0 overflow-y-auto"
+            @click="onFullscreenClick"
+          >
+            <ClientOnly>
+              <MdPreview
+                :model-value="props.modelValue"
+                language="en-US"
+                preview-theme="default"
+                :no-img-zoom-in="true"
+                :show-code-row-number="true"
+                class="mx-auto max-w-5xl px-4 sm:px-6 py-4"
+              />
+            </ClientOnly>
+          </div>
+        </div>
+      </template>
+    </UModal>
+    <ImageLightbox ref="lightbox" />
   </div>
 </template>
 
