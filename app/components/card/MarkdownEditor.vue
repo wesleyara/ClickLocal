@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { MdEditor, MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
+import '~/utils/mdEditorConfig'
 import * as md from '~/utils/markdownToolbar'
 import type { InsertGenerator } from '~/utils/markdownToolbar'
 

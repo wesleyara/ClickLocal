@@ -2,6 +2,7 @@
 import DOMPurify from 'dompurify'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
+import '~/utils/mdEditorConfig'
 
 const props = defineProps<{ cardId: number | null, boardId: number }>()
 const emit = defineEmits<{ close: [] }>()

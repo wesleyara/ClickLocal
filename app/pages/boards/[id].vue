@@ -292,7 +292,7 @@ defineShortcuts({
       />
     </VueDraggable>
 
-    <CardModal
+    <LazyCardModal
       :card-id="openCardId"
       :board-id="boardId"
       @close="closeCard"
