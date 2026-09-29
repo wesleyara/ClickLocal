@@ -46,6 +46,15 @@ useSeoMeta({
         >
           <span class="hidden sm:inline">Azure DevOps</span>
         </UButton>
+        <UButton
+          to="/docs"
+          icon="i-lucide-book-open"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+        >
+          <span class="hidden sm:inline">Docs</span>
+        </UButton>
         <UColorModeButton />
       </template>
     </UHeader>

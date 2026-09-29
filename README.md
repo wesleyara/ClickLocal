@@ -8,6 +8,12 @@ lançamento manual de tempo, e histórico de mudanças por card.
 Stack: Nuxt 4 + Nuxt UI, Prisma + SQLite (arquivo local em `data/`),
 Pinia, `vue-draggable-plus`, `md-editor-v3`.
 
+## Documentação
+
+A documentação (uso, Azure DevOps e integração MCP) fica no próprio app, em
+`http://localhost:8880/docs`. O servidor MCP, que permite a agentes de IA
+consultarem e gerenciarem o backlog, está em [`mcp-server/`](mcp-server/README.md).
+
 ## Rodando localmente (npm)
 
 Requer Node 22+.
