@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import DOMPurify from 'dompurify'
 import { MdPreview } from 'md-editor-v3'
+import type { UploadImgCallBack } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import '~/utils/mdEditorConfig'
+
+const colorMode = useColorMode()
 
 const props = defineProps<{ cardId: number | null, boardId: number }>()
 const emit = defineEmits<{ close: [] }>()
@@ -45,7 +48,7 @@ const {
   setArchived,
   addChildCard,
   saveTitle,
-  uploadImages
+  uploadMedia
 } = useCard(activeCardId)
 
 const sanitizedAdoDescription = computed(() => {
@@ -177,12 +180,12 @@ function onMarkdownClick(event: MouseEvent) {
   }
 }
 
-async function handleUploadImg(files: File[], callback: (urls: string[]) => void) {
+async function handleUploadImg(files: File[], callback: UploadImgCallBack) {
   try {
-    const urls = await uploadImages(files)
-    callback(urls)
-  } catch {
-    toast.add({ title: 'Failed to upload image', color: 'error' })
+    callback(await uploadMedia(files))
+  } catch (error) {
+    const message = (error as { statusMessage?: string }).statusMessage
+    toast.add({ title: message ?? 'Failed to upload file', color: 'error' })
   }
 }
 
@@ -524,6 +527,7 @@ watch(commentsTab, async (tab) => {
                           :model-value="comment.body"
                           language="en-US"
                           preview-theme="default"
+                          :theme="colorMode.value === 'dark' ? 'dark' : 'light'"
                           class="text-[13px]"
                           :no-img-zoom-in="true"
                           :show-code-row-number="true"

@@ -218,6 +218,10 @@ defineShortcuts({
             </UButton>
             <PushHoursDialog @pushed="store.loadBoard(boardId)" />
           </template>
+          <SaveTemplateDialog
+            :board-id="boardId"
+            :default-name="store.board.name"
+          />
           <ArchivedCardsDialog
             :board-id="boardId"
             @restored="store.loadBoard(boardId)"

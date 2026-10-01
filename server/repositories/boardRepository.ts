@@ -40,6 +40,16 @@ export const boardRepository = {
     })
   },
 
+  findByIdWithStructure(id: number) {
+    return db.board.findUnique({
+      where: { id },
+      include: {
+        columns: { orderBy: { position: 'asc' }, select: { name: true, color: true } },
+        tags: { orderBy: { id: 'asc' }, select: { name: true, color: true } }
+      }
+    })
+  },
+
   findArchivedCards(boardId: number) {
     return db.card.findMany({
       where: { archived: true, column: { boardId } },

@@ -38,9 +38,44 @@ model BoardColumn {
   @@map("board_columns")
 }
 
+/// User-saved board template: a snapshot of a board's columns and tags (no cards).
+model BoardTemplate {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  columns BoardTemplateColumn[]
+  tags    BoardTemplateTag[]
+
+  @@map("board_templates")
+}
+
+model BoardTemplateColumn {
+  id         Int    @id @default(autoincrement())
+  templateId Int    @map("template_id")
+  name       String
+  color      String
+  position   Int
+
+  template BoardTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("board_template_columns")
+}
+
+model BoardTemplateTag {
+  id         Int    @id @default(autoincrement())
+  templateId Int    @map("template_id")
+  name       String
+  color      String
+
+  template BoardTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("board_template_tags")
+}
+
 model Card {
   id          Int       @id @default(autoincrement())
-  columnId    Int       @map("column_id")
+  columnId   Int       @map("column_id")
   parentId    Int?      @map("parent_id")
   title       String
   description String?

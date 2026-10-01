@@ -1,10 +1,12 @@
 import type { Prisma } from '@prisma/client'
+import { attachmentRepository } from '../repositories/attachmentRepository'
 import { azureDevOpsRepository } from '../repositories/azureDevOpsRepository'
 import { cardRepository } from '../repositories/cardRepository'
 import { pushStateForMoves } from './azureDevOps/state'
 import { logActivity } from '../utils/activity'
 import { db } from '../utils/db'
 import { nextPosition } from '../utils/position'
+import { deleteImage } from '../utils/storage'
 
 export async function getCard(id: number) {
   const card = await cardRepository.findByIdWithRelations(id)
@@ -118,7 +120,9 @@ export async function deleteCard(id: number) {
   if (linked) {
     throw new LinkedCardError('Card vinculado ao Azure DevOps não pode ser excluído, só arquivado')
   }
+  const attachments = await attachmentRepository.findStorageKeysByCardId(id)
   await cardRepository.delete(id)
+  await Promise.all(attachments.map(a => deleteImage(a.storageKey)))
 }
 
 export async function reorderCards(updates: { id: number, columnId: number, position: number }[]) {

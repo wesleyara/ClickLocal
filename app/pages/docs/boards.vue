@@ -8,6 +8,14 @@
       no header para alternar entre eles. Dentro de um board você pode renomear ou excluir o board pelo menu.
     </p>
 
+    <h2>Modelos de board</h2>
+    <p>
+      Ao criar um board você escolhe um <strong>modelo</strong>: <em>Vazio</em>, <em>Kanban dev</em> (TO-DO, Bugs, In-progress,
+      Testing, Done, já com cores) ou <em>To do / Doing / Done</em>. Para reaproveitar a estrutura de um board seu, use
+      <strong>Salvar como modelo</strong> no header do board: o modelo guarda as colunas (nome, cor e ordem) e as tags, sem os
+      cards. Modelos salvos aparecem no seletor de novo board e podem ser excluídos ali (boards já criados não são afetados).
+    </p>
+
     <h2>Colunas</h2>
     <p>Cada coluna tem <strong>nome</strong> e <strong>cor</strong>. É possível:</p>
     <ul>
@@ -32,7 +40,7 @@
           <tr><td>Cards filhos</td><td>Cards vinculados a um card pai, para quebrar trabalho maior</td></tr>
           <tr><td>Tags</td><td>Criadas por board, com cor; podem ser associadas a vários cards</td></tr>
           <tr><td>Prazo</td><td>Data de entrega</td></tr>
-          <tr><td>Anexos de imagem</td><td>Abrem em um visualizador ampliado</td></tr>
+          <tr><td>Anexos de imagem e vídeo</td><td>Imagens abrem em um visualizador ampliado; vídeos (MP4/WebM, até 100 MB) tocam no próprio card</td></tr>
           <tr><td>Comentários e horas</td><td>Veja <NuxtLink to="/docs/tempo-atividade">Tempo e atividade</NuxtLink></td></tr>
         </tbody>
       </table>

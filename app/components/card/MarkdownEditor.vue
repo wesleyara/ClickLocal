@@ -4,16 +4,20 @@ import 'md-editor-v3/lib/style.css'
 import '~/utils/mdEditorConfig'
 import * as md from '~/utils/markdownToolbar'
 import type { InsertGenerator } from '~/utils/markdownToolbar'
+import type { UploadImgCallBack } from 'md-editor-v3'
 
 const props = withDefaults(defineProps<{
   modelValue: string
   height?: string
-  onUploadImg?: (files: File[], callback: (urls: string[]) => void) => void
+  onUploadImg?: (files: File[], callback: UploadImgCallBack) => void
 }>(), {
   height: '240px'
 })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+
+const colorMode = useColorMode()
+const editorTheme = computed(() => colorMode.value === 'dark' ? 'dark' : 'light')
 
 const viewMode = ref<'editor' | 'preview'>('editor')
 const editorRef = useTemplateRef('editorRef')
@@ -27,6 +31,22 @@ function onFullscreenClick(event: MouseEvent) {
   if (target.tagName === 'IMG' && target.closest('.md-editor-preview')) {
     lightbox.value?.open((target as HTMLImageElement).src)
   }
+}
+
+const videoInput = useTemplateRef('videoInput')
+
+function onVideoPicked(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = Array.from(input.files ?? [])
+  input.value = ''
+  if (!files.length || !props.onUploadImg) return
+  props.onUploadImg(files, (items) => {
+    const markdown = items
+      .map(item => typeof item === 'string' ? { url: item, alt: 'video' } : item)
+      .map(item => `![${item.alt || 'video'}](${item.url})`)
+      .join('\n')
+    run(() => ({ targetValue: `${markdown}\n`, select: false, deviationStart: 0, deviationEnd: 0 }))
+  })
 }
 
 function run(generator: InsertGenerator) {
@@ -48,6 +68,7 @@ const insertItems = [
   { label: 'Code block', icon: 'i-lucide-square-code', onSelect: () => run(md.codeBlock) },
   { label: 'Link', icon: 'i-lucide-link', onSelect: () => run(md.link) },
   { label: 'Image', icon: 'i-lucide-image', onSelect: () => run(md.image) },
+  { label: 'Video', icon: 'i-lucide-video', onSelect: () => videoInput.value?.click() },
   { label: 'Table', icon: 'i-lucide-table', onSelect: () => run(md.table) },
   { label: 'Diagram', icon: 'i-lucide-workflow', onSelect: () => run(md.mermaid) },
   { label: 'Formula', icon: 'i-lucide-sigma', onSelect: () => run(md.katex) }
@@ -128,6 +149,13 @@ const insertItems = [
 
         <div class="w-px h-4 bg-default mx-0.5" />
 
+        <input
+          ref="videoInput"
+          type="file"
+          accept="video/mp4,video/webm"
+          class="hidden"
+          @change="onVideoPicked"
+        >
         <UDropdownMenu :items="insertItems">
           <UButton
             icon="i-lucide-plus"
@@ -179,6 +207,7 @@ const insertItems = [
         :model-value="props.modelValue"
         language="en-US"
         preview-theme="default"
+        :theme="editorTheme"
         :preview="false"
         :toolbars="[]"
         :show-code-row-number="true"
@@ -193,6 +222,7 @@ const insertItems = [
         :model-value="props.modelValue"
         language="en-US"
         preview-theme="default"
+        :theme="editorTheme"
         :no-img-zoom-in="true"
         :show-code-row-number="true"
         class="border border-default border-t-0 rounded-b-md px-3 py-2 overflow-y-auto"
@@ -225,6 +255,7 @@ const insertItems = [
                 :model-value="props.modelValue"
                 language="en-US"
                 preview-theme="default"
+                :theme="editorTheme"
                 :no-img-zoom-in="true"
                 :show-code-row-number="true"
                 class="mx-auto max-w-5xl px-4 sm:px-6 py-4"

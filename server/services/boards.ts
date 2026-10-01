@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { boardRepository } from '../repositories/boardRepository'
 import { nextPosition } from '../utils/position'
+import { resolveTemplate, templateToBoardCreateData } from './boardTemplates'
 
 export async function listBoards() {
   const boards = await boardRepository.findMany()
@@ -16,13 +17,24 @@ export function getBoard(id: number) {
   return boardRepository.findById(id)
 }
 
-export async function createBoard(input: { name: string, description?: string | null }) {
+export class TemplateNotFoundError extends Error {
+  constructor(templateId: string) {
+    super(`Board template not found: ${templateId}`)
+  }
+}
+
+export async function createBoard(input: { name: string, description?: string | null, templateId?: string | null }) {
+  const template = input.templateId ? await resolveTemplate(input.templateId) : null
+  if (input.templateId && !template) throw new TemplateNotFoundError(input.templateId)
+
   const last = await boardRepository.findLastByPosition()
 
+  // Nested writes: Prisma creates the board, its columns and tags atomically.
   return boardRepository.create({
     name: input.name.trim(),
     description: input.description?.trim() || null,
-    position: nextPosition(last?.position)
+    position: nextPosition(last?.position),
+    ...(template ? templateToBoardCreateData(template) : {})
   })
 }
 

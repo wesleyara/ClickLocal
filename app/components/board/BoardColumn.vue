@@ -37,8 +37,6 @@ const isAdoBoard = computed(() => store.columns.some(c => c.adoStateCategory || 
 const addingCard = ref(false)
 const newCardTitle = ref('')
 
-const PALETTE = ['#6d5ce8', '#2f9e8f', '#c17a1f', '#dc4c4c', '#3b82f6', '#16a34a']
-
 const editing = ref(false)
 const editName = ref('')
 const editColor = ref('')
@@ -179,6 +177,9 @@ defineExpose({
       :group="{ name: 'cards', pull: true, put: true }"
       class="flex flex-col gap-2.5 min-h-[6px] flex-1 overflow-y-auto -me-1 pe-1"
       ghost-class="opacity-40"
+      :delay="250"
+      :delay-on-touch-only="true"
+      :touch-start-threshold="8"
       @end="handleDragEnd"
     >
       <BoardCard

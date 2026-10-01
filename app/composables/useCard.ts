@@ -171,15 +171,19 @@ export function useCard(id: Ref<number | null>) {
     card.value.archived = archived
   }
 
-  async function uploadImages(files: File[]) {
+  async function uploadMedia(files: File[]) {
     if (!card.value) return []
     const formData = new FormData()
     for (const file of files) formData.append('files', file)
-    const attachments = await $fetch<{ id: number, url: string }[]>(`/api/cards/${card.value.id}/attachments`, {
+    const attachments = await $fetch<{ id: number, url: string, mimeType: string }[]>(`/api/cards/${card.value.id}/attachments`, {
       method: 'POST',
       body: formData
     })
-    return attachments.map(a => a.url)
+    return attachments.map(a => ({
+      url: a.url,
+      alt: a.mimeType.startsWith('video/') ? 'video' : '',
+      title: ''
+    }))
   }
 
   async function addChildCard(title: string) {
@@ -219,6 +223,6 @@ export function useCard(id: Ref<number | null>) {
     removeTag,
     setArchived,
     addChildCard,
-    uploadImages
+    uploadMedia
   }
 }

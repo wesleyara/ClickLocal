@@ -45,7 +45,8 @@ ${fence}`
     <h2>Fórmulas</h2>
     <p>Use <em>Formula</em> no menu <strong>Inserir</strong> para escrever expressões em KaTeX, como <code>$$ E = mc^2 $$</code>.</p>
 
-    <h2>Imagens</h2>
-    <p>Você pode enviar imagens pelo editor. No Preview, clique na imagem para abri-la no visualizador ampliado.</p>
+    <h2>Imagens e vídeos</h2>
+    <p>Você pode enviar imagens (até 10 MB) pelo editor. No Preview, clique na imagem para abri-la no visualizador ampliado.</p>
+    <p>Para usar como evidência, envie vídeos <strong>MP4</strong> ou <strong>WebM</strong> de até 100 MB: use <em>Video</em> no menu <strong>Inserir</strong>, ou cole/arraste o arquivo no editor. No Preview o vídeo aparece com controles de reprodução.</p>
   </div>
 </template>

@@ -45,8 +45,8 @@ npm run dev`
           <tr><th>Área</th><th>O que faz</th></tr>
         </thead>
         <tbody>
-          <tr><td>Boards</td><td>Vários boards, colunas com nome e cor, drag-and-drop</td></tr>
-          <tr><td>Cards</td><td>Subtarefas, cards filhos, tags, prazo, arquivamento, imagens</td></tr>
+          <tr><td>Boards</td><td>Vários boards, modelos de board, colunas com nome e cor, drag-and-drop</td></tr>
+          <tr><td>Cards</td><td>Subtarefas, cards filhos, tags, prazo, arquivamento, imagens e vídeos</td></tr>
           <tr><td>Editor</td><td>Markdown com toolbar, diagramas Mermaid e fórmulas KaTeX</td></tr>
           <tr><td>Tempo</td><td>Cronômetro e lançamento manual de horas</td></tr>
           <tr><td>Atividade</td><td>Comentários em Markdown e histórico de mudanças</td></tr>
