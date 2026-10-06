@@ -249,7 +249,7 @@ watch(commentsTab, async (tab) => {
   <UModal
     v-model:open="open"
     :fullscreen="fullscreen"
-    :ui="{ content: fullscreen ? '' : 'sm:max-w-3xl lg:max-w-5xl' }"
+    :ui="{ content: fullscreen ? '' : 'sm:max-w-4xl lg:max-w-6xl' }"
   >
     <template #content="{ close }">
       <div

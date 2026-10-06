@@ -279,4 +279,11 @@ const insertItems = [
 :deep(.md-editor-previewOnly) {
   overflow-y: auto !important;
 }
+:deep(.md-editor-previewOnly .md-editor-preview-wrapper) {
+  padding: 0;
+}
+
+:deep(.md-editor-previewOnly .md-editor-preview > :first-child) {
+  margin-top: 0;
+}
 </style>
