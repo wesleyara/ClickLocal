@@ -22,7 +22,8 @@ export const docsNav: DocsNavGroup[] = [
       { label: 'Boards, colunas e cards', to: '/docs/boards', icon: 'i-lucide-layout-dashboard' },
       { label: 'Editor Markdown e Mermaid', to: '/docs/editor', icon: 'i-lucide-file-pen' },
       { label: 'Tempo e atividade', to: '/docs/tempo-atividade', icon: 'i-lucide-timer' },
-      { label: 'Azure DevOps', to: '/docs/azure-devops', icon: 'i-lucide-plug-zap' }
+      { label: 'Azure DevOps', to: '/docs/azure-devops', icon: 'i-lucide-plug-zap' },
+      { label: 'Backup e restauração', to: '/docs/backup', icon: 'i-lucide-database-backup' }
     ]
   },
   {

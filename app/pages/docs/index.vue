@@ -15,7 +15,7 @@ npm run dev`
 
     <h2>O que você encontra aqui</h2>
     <ul>
-      <li><NuxtLink to="/docs/boards">Uso</NuxtLink>: boards, colunas e cards, editor Markdown com diagramas, controle de tempo e a integração com o Azure DevOps.</li>
+      <li><NuxtLink to="/docs/boards">Uso</NuxtLink>: boards, colunas e cards, editor Markdown com diagramas, controle de tempo e a integração com o Azure DevOps e o backup/restauração dos dados.</li>
       <li><NuxtLink to="/docs/mcp">Integração MCP</NuxtLink>: como deixar agentes de IA (Claude Code, Claude Desktop e outros clientes MCP) consultarem e gerenciarem seu backlog.</li>
     </ul>
 
@@ -51,6 +51,7 @@ npm run dev`
           <tr><td>Tempo</td><td>Cronômetro e lançamento manual de horas</td></tr>
           <tr><td>Atividade</td><td>Comentários em Markdown e histórico de mudanças</td></tr>
           <tr><td>Azure DevOps</td><td>Sincroniza seus work items e envia estado, horas e comentários</td></tr>
+          <tr><td>Backup</td><td>Baixa um .zip com banco e anexos e restaura a partir dele</td></tr>
           <tr><td>MCP</td><td>23 tools para agentes de IA gerenciarem o backlog</td></tr>
         </tbody>
       </table>

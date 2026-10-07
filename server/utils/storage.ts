@@ -3,7 +3,7 @@ import { createReadStream } from 'node:fs'
 import { mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-const UPLOAD_DIR = join(process.cwd(), 'data', 'uploads')
+export const UPLOAD_DIR = join(process.cwd(), 'data', 'uploads')
 
 const ALLOWED_MIME_TYPES: Record<string, string> = {
   'image/png': '.png',

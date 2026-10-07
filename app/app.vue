@@ -47,6 +47,24 @@ useSeoMeta({
           <span class="hidden sm:inline">Azure DevOps</span>
         </UButton>
         <UButton
+          to="/settings/anexos"
+          icon="i-lucide-paperclip"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+        >
+          <span class="hidden sm:inline">Anexos</span>
+        </UButton>
+        <UButton
+          to="/settings/backup"
+          icon="i-lucide-database-backup"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+        >
+          <span class="hidden sm:inline">Backup</span>
+        </UButton>
+        <UButton
           to="/docs"
           icon="i-lucide-book-open"
           color="neutral"
