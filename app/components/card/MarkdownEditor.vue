@@ -9,6 +9,8 @@ import type { UploadImgCallBack } from 'md-editor-v3'
 const props = withDefaults(defineProps<{
   modelValue: string
   height?: string
+  expanded?: boolean
+  initialMode?: 'editor' | 'preview'
   onUploadImg?: (files: File[], callback: UploadImgCallBack) => void
 }>(), {
   height: '240px'
@@ -19,12 +21,12 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const colorMode = useColorMode()
 const editorTheme = computed(() => colorMode.value === 'dark' ? 'dark' : 'light')
 
-const viewMode = ref<'editor' | 'preview'>('editor')
+const viewMode = ref<'editor' | 'preview'>(props.initialMode ?? 'editor')
 const editorRef = useTemplateRef('editorRef')
-const previewFullscreen = ref(false)
+const expandedOpen = ref(false)
 const lightbox = useTemplateRef('lightbox')
 
-// The fullscreen preview lives in its own portal, so image clicks never reach
+// The expanded view lives in its own portal, so image clicks never reach
 // the parent's lightbox handler — open our own instead.
 function onFullscreenClick(event: MouseEvent) {
   const target = event.target as HTMLElement
@@ -76,7 +78,10 @@ const insertItems = [
 </script>
 
 <template>
-  <div class="flex flex-col">
+  <div
+    class="flex flex-col"
+    @click="props.expanded && onFullscreenClick($event)"
+  >
     <div class="flex items-center justify-between gap-2 rounded-t-md border border-default bg-elevated/50 px-1.5 py-1">
       <div
         v-if="viewMode === 'editor'"
@@ -187,16 +192,18 @@ const insertItems = [
           :variant="viewMode === 'preview' ? 'solid' : 'ghost'"
           @click="viewMode = 'preview'"
         />
-        <div class="w-px h-4 bg-default mx-0.5" />
-        <UTooltip text="Expand preview">
-          <UButton
-            icon="i-lucide-maximize-2"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            @click="previewFullscreen = true"
-          />
-        </UTooltip>
+        <template v-if="!props.expanded">
+          <div class="w-px h-4 bg-default mx-0.5" />
+          <UTooltip text="Expand">
+            <UButton
+              icon="i-lucide-maximize-2"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="expandedOpen = true"
+            />
+          </UTooltip>
+        </template>
       </div>
     </div>
 
@@ -231,13 +238,13 @@ const insertItems = [
     </ClientOnly>
 
     <UModal
-      v-model:open="previewFullscreen"
+      v-if="!props.expanded"
+      v-model:open="expandedOpen"
       fullscreen
     >
       <template #content="{ close }">
-        <div class="flex flex-col flex-1 min-h-0">
-          <div class="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 border-b border-default">
-            <span class="text-[11px] font-bold uppercase tracking-wide text-muted">Preview</span>
+        <div class="flex flex-col flex-1 min-h-0 mx-auto w-full max-w-5xl px-4 sm:px-6 py-3 gap-3">
+          <div class="flex justify-end">
             <UButton
               icon="i-lucide-minimize-2"
               size="xs"
@@ -246,22 +253,14 @@ const insertItems = [
               @click="close"
             />
           </div>
-          <div
-            class="flex-1 min-h-0 overflow-y-auto"
-            @click="onFullscreenClick"
-          >
-            <ClientOnly>
-              <MdPreview
-                :model-value="props.modelValue"
-                language="en-US"
-                preview-theme="default"
-                :theme="editorTheme"
-                :no-img-zoom-in="true"
-                :show-code-row-number="true"
-                class="mx-auto max-w-5xl px-4 sm:px-6 py-4"
-              />
-            </ClientOnly>
-          </div>
+          <MarkdownEditor
+            :model-value="props.modelValue"
+            expanded
+            :initial-mode="viewMode"
+            height="calc(100dvh - 6rem)"
+            :on-upload-img="props.onUploadImg"
+            @update:model-value="emit('update:modelValue', $event)"
+          />
         </div>
       </template>
     </UModal>
