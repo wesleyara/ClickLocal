@@ -195,10 +195,9 @@ const insertItems = [
           :variant="viewMode === 'preview' ? 'solid' : 'ghost'"
           @click="viewMode = 'preview'"
         />
-        <slot name="actions" />
         <slot
           v-if="props.expanded"
-          name="expanded-actions"
+          name="actions"
         />
         <template v-if="!props.expanded">
           <div class="w-px h-4 bg-default mx-0.5" />
@@ -275,9 +274,6 @@ const insertItems = [
           >
             <template #actions>
               <slot name="actions" />
-            </template>
-            <template #expanded-actions>
-              <slot name="expanded-actions" />
             </template>
           </MarkdownEditor>
         </div>
