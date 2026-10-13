@@ -382,18 +382,6 @@ watch(commentsTab, async (tab) => {
               <div class="flex flex-col gap-2">
                 <div class="flex items-center justify-between">
                   <span class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted">Description</span>
-                  <UButton
-                    v-if="!card.ado"
-                    label="Salvar"
-                    icon="i-lucide-check"
-                    size="xs"
-                    :color="descriptionDirty ? 'primary' : 'neutral'"
-                    :variant="descriptionDirty ? 'soft' : 'ghost'"
-                    :loading="savingDescription"
-                    :disabled="!descriptionDirty"
-                    class="disabled:opacity-40"
-                    @click="submitDescription"
-                  />
                 </div>
                 <div
                   v-if="card.ado"
@@ -555,7 +543,7 @@ watch(commentsTab, async (tab) => {
                     height="160px"
                     :on-upload-img="handleUploadImg"
                   >
-                    <template #actions>
+                    <template #expanded-actions>
                       <UButton
                         label="Comment"
                         size="xs"

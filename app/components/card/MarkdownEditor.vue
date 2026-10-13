@@ -195,9 +195,10 @@ const insertItems = [
           :variant="viewMode === 'preview' ? 'solid' : 'ghost'"
           @click="viewMode = 'preview'"
         />
+        <slot name="actions" />
         <slot
           v-if="props.expanded"
-          name="actions"
+          name="expanded-actions"
         />
         <template v-if="!props.expanded">
           <div class="w-px h-4 bg-default mx-0.5" />
@@ -275,6 +276,9 @@ const insertItems = [
             <template #actions>
               <slot name="actions" />
             </template>
+            <template #expanded-actions>
+              <slot name="expanded-actions" />
+            </template>
           </MarkdownEditor>
         </div>
       </template>
@@ -303,8 +307,9 @@ const insertItems = [
 
 /* Expanded: the box spans the whole container, the text stays in a readable column. */
 :deep(.md-expanded .cm-content),
-:deep(.md-expanded .md-editor-preview-wrapper) {
+:deep(.md-expanded .md-editor-preview) {
+  width: 100%;
   max-width: 64rem;
-  margin-inline: auto;
+  margin-inline: auto !important;
 }
 </style>
