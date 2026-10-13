@@ -406,7 +406,21 @@ watch(commentsTab, async (tab) => {
                   height="300px"
                   :on-upload-img="handleUploadImg"
                   @update:model-value="onDescriptionChange"
-                />
+                >
+                  <template #actions>
+                    <UButton
+                      label="Salvar"
+                      icon="i-lucide-check"
+                      size="xs"
+                      :color="descriptionDirty ? 'primary' : 'neutral'"
+                      :variant="descriptionDirty ? 'soft' : 'ghost'"
+                      :loading="savingDescription"
+                      :disabled="!descriptionDirty"
+                      class="disabled:opacity-40"
+                      @click="submitDescription"
+                    />
+                  </template>
+                </MarkdownEditor>
               </div>
 
               <SubtaskList
@@ -540,7 +554,17 @@ watch(commentsTab, async (tab) => {
                     v-model="newComment"
                     height="160px"
                     :on-upload-img="handleUploadImg"
-                  />
+                  >
+                    <template #actions>
+                      <UButton
+                        label="Comment"
+                        size="xs"
+                        :loading="postingComment"
+                        :disabled="!newComment.trim()"
+                        @click="submitComment"
+                      />
+                    </template>
+                  </MarkdownEditor>
                   <UButton
                     label="Comment"
                     size="sm"

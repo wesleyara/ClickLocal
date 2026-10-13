@@ -24,6 +24,9 @@ const editorTheme = computed(() => colorMode.value === 'dark' ? 'dark' : 'light'
 const viewMode = ref<'editor' | 'preview'>(props.initialMode ?? 'editor')
 const editorRef = useTemplateRef('editorRef')
 const expandedOpen = ref(false)
+// Each instance needs its own id: md-editor derives mermaid/DOM ids from it, so the
+// expanded copy would otherwise clash with the inline one.
+const editorId = `md-${useId()}`
 const lightbox = useTemplateRef('lightbox')
 
 // The expanded view lives in its own portal, so image clicks never reach
@@ -192,6 +195,10 @@ const insertItems = [
           :variant="viewMode === 'preview' ? 'solid' : 'ghost'"
           @click="viewMode = 'preview'"
         />
+        <slot
+          v-if="props.expanded"
+          name="actions"
+        />
         <template v-if="!props.expanded">
           <div class="w-px h-4 bg-default mx-0.5" />
           <UTooltip text="Expand">
@@ -211,6 +218,7 @@ const insertItems = [
       <MdEditor
         v-if="viewMode === 'editor'"
         ref="editorRef"
+        :editor-id="editorId"
         :model-value="props.modelValue"
         language="en-US"
         preview-theme="default"
@@ -220,12 +228,14 @@ const insertItems = [
         :show-code-row-number="true"
         :style="{ height: props.height }"
         class="!rounded-t-none"
+        :class="{ 'md-expanded': props.expanded }"
         :on-upload-img="props.onUploadImg"
         :no-img-zoom-in="true"
         @update:model-value="emit('update:modelValue', $event)"
       />
       <MdPreview
         v-else
+        :editor-id="editorId"
         :model-value="props.modelValue"
         language="en-US"
         preview-theme="default"
@@ -233,6 +243,7 @@ const insertItems = [
         :no-img-zoom-in="true"
         :show-code-row-number="true"
         class="border border-default border-t-0 rounded-b-md px-3 py-2 overflow-y-auto"
+        :class="{ 'md-expanded': props.expanded }"
         :style="{ height: props.height }"
       />
     </ClientOnly>
@@ -243,7 +254,7 @@ const insertItems = [
       fullscreen
     >
       <template #content="{ close }">
-        <div class="flex flex-col flex-1 min-h-0 mx-auto w-full max-w-5xl px-4 sm:px-6 py-3 gap-3">
+        <div class="flex flex-col flex-1 min-h-0 w-full px-4 sm:px-6 py-3 gap-3">
           <div class="flex justify-end">
             <UButton
               icon="i-lucide-minimize-2"
@@ -260,7 +271,11 @@ const insertItems = [
             height="calc(100dvh - 6rem)"
             :on-upload-img="props.onUploadImg"
             @update:model-value="emit('update:modelValue', $event)"
-          />
+          >
+            <template #actions>
+              <slot name="actions" />
+            </template>
+          </MarkdownEditor>
         </div>
       </template>
     </UModal>
@@ -284,5 +299,12 @@ const insertItems = [
 
 :deep(.md-editor-previewOnly .md-editor-preview > :first-child) {
   margin-top: 0;
+}
+
+/* Expanded: the box spans the whole container, the text stays in a readable column. */
+:deep(.md-expanded .cm-content),
+:deep(.md-expanded .md-editor-preview-wrapper) {
+  max-width: 64rem;
+  margin-inline: auto;
 }
 </style>
