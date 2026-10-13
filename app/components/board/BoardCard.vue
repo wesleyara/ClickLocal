@@ -56,11 +56,26 @@ const runningElapsed = computed(() => {
     class="group bg-default border border-default rounded-[11px] p-3.5 flex flex-col gap-2.5 shadow-xs hover:border-primary/40 hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
     @click="emit('open', card.id)"
   >
+    <div
+      v-if="card.ado"
+      class="flex items-center gap-1.5 flex-wrap text-[11px] font-bold"
+    >
+      <span class="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary">
+        {{ card.ado.type }} #{{ card.ado.adoId }}
+      </span>
+      <span class="px-1.5 py-0.5 rounded-md bg-muted/60 text-muted">
+        {{ card.ado.state }}
+      </span>
+      <span class="text-muted font-medium truncate">
+        {{ card.ado.project }}
+      </span>
+    </div>
     <div class="flex items-start justify-between gap-2">
       <p class="text-[13.5px] font-semibold leading-snug">
         {{ card.title }}
       </p>
       <UButton
+        v-if="!card.ado"
         icon="i-lucide-x"
         size="xs"
         color="neutral"

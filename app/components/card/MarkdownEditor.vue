@@ -1,21 +1,58 @@
 <script setup lang="ts">
 import { MdEditor, MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
+import '~/utils/mdEditorConfig'
 import * as md from '~/utils/markdownToolbar'
 import type { InsertGenerator } from '~/utils/markdownToolbar'
+import type { UploadImgCallBack } from 'md-editor-v3'
 
 const props = withDefaults(defineProps<{
   modelValue: string
   height?: string
-  onUploadImg?: (files: File[], callback: (urls: string[]) => void) => void
+  expanded?: boolean
+  initialMode?: 'editor' | 'preview'
+  onUploadImg?: (files: File[], callback: UploadImgCallBack) => void
 }>(), {
   height: '240px'
 })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
-const viewMode = ref<'editor' | 'preview'>('editor')
+const colorMode = useColorMode()
+const editorTheme = computed(() => colorMode.value === 'dark' ? 'dark' : 'light')
+
+const viewMode = ref<'editor' | 'preview'>(props.initialMode ?? 'editor')
 const editorRef = useTemplateRef('editorRef')
+const expandedOpen = ref(false)
+// Each instance needs its own id: md-editor derives mermaid/DOM ids from it, so the
+// expanded copy would otherwise clash with the inline one.
+const editorId = `md-${useId()}`
+const lightbox = useTemplateRef('lightbox')
+
+// The expanded view lives in its own portal, so image clicks never reach
+// the parent's lightbox handler — open our own instead.
+function onFullscreenClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  if (target.tagName === 'IMG' && target.closest('.md-editor-preview')) {
+    lightbox.value?.open((target as HTMLImageElement).src)
+  }
+}
+
+const videoInput = useTemplateRef('videoInput')
+
+function onVideoPicked(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = Array.from(input.files ?? [])
+  input.value = ''
+  if (!files.length || !props.onUploadImg) return
+  props.onUploadImg(files, (items) => {
+    const markdown = items
+      .map(item => typeof item === 'string' ? { url: item, alt: 'video' } : item)
+      .map(item => `![${item.alt || 'video'}](${item.url})`)
+      .join('\n')
+    run(() => ({ targetValue: `${markdown}\n`, select: false, deviationStart: 0, deviationEnd: 0 }))
+  })
+}
 
 function run(generator: InsertGenerator) {
   editorRef.value?.insert(generator)
@@ -36,6 +73,7 @@ const insertItems = [
   { label: 'Code block', icon: 'i-lucide-square-code', onSelect: () => run(md.codeBlock) },
   { label: 'Link', icon: 'i-lucide-link', onSelect: () => run(md.link) },
   { label: 'Image', icon: 'i-lucide-image', onSelect: () => run(md.image) },
+  { label: 'Video', icon: 'i-lucide-video', onSelect: () => videoInput.value?.click() },
   { label: 'Table', icon: 'i-lucide-table', onSelect: () => run(md.table) },
   { label: 'Diagram', icon: 'i-lucide-workflow', onSelect: () => run(md.mermaid) },
   { label: 'Formula', icon: 'i-lucide-sigma', onSelect: () => run(md.katex) }
@@ -43,7 +81,10 @@ const insertItems = [
 </script>
 
 <template>
-  <div class="flex flex-col">
+  <div
+    class="flex flex-col"
+    @click="props.expanded && onFullscreenClick($event)"
+  >
     <div class="flex items-center justify-between gap-2 rounded-t-md border border-default bg-elevated/50 px-1.5 py-1">
       <div
         v-if="viewMode === 'editor'"
@@ -116,6 +157,13 @@ const insertItems = [
 
         <div class="w-px h-4 bg-default mx-0.5" />
 
+        <input
+          ref="videoInput"
+          type="file"
+          accept="video/mp4,video/webm"
+          class="hidden"
+          @change="onVideoPicked"
+        >
         <UDropdownMenu :items="insertItems">
           <UButton
             icon="i-lucide-plus"
@@ -147,6 +195,23 @@ const insertItems = [
           :variant="viewMode === 'preview' ? 'solid' : 'ghost'"
           @click="viewMode = 'preview'"
         />
+        <slot name="actions" />
+        <slot
+          v-if="props.expanded"
+          name="expanded-actions"
+        />
+        <template v-if="!props.expanded">
+          <div class="w-px h-4 bg-default mx-0.5" />
+          <UTooltip text="Expand">
+            <UButton
+              icon="i-lucide-maximize-2"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="expandedOpen = true"
+            />
+          </UTooltip>
+        </template>
       </div>
     </div>
 
@@ -154,28 +219,97 @@ const insertItems = [
       <MdEditor
         v-if="viewMode === 'editor'"
         ref="editorRef"
+        :editor-id="editorId"
         :model-value="props.modelValue"
         language="en-US"
         preview-theme="default"
+        :theme="editorTheme"
         :preview="false"
         :toolbars="[]"
         :show-code-row-number="true"
         :style="{ height: props.height }"
         class="!rounded-t-none"
+        :class="{ 'md-expanded': props.expanded }"
         :on-upload-img="props.onUploadImg"
         :no-img-zoom-in="true"
         @update:model-value="emit('update:modelValue', $event)"
       />
       <MdPreview
         v-else
+        :editor-id="editorId"
         :model-value="props.modelValue"
         language="en-US"
         preview-theme="default"
+        :theme="editorTheme"
         :no-img-zoom-in="true"
         :show-code-row-number="true"
         class="border border-default border-t-0 rounded-b-md px-3 py-2 overflow-y-auto"
+        :class="{ 'md-expanded': props.expanded }"
         :style="{ height: props.height }"
       />
     </ClientOnly>
+
+    <UModal
+      v-if="!props.expanded"
+      v-model:open="expandedOpen"
+      fullscreen
+    >
+      <template #content="{ close }">
+        <div class="flex flex-col flex-1 min-h-0 w-full px-4 sm:px-6 py-3 gap-3">
+          <div class="flex justify-end">
+            <UButton
+              icon="i-lucide-minimize-2"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="close"
+            />
+          </div>
+          <MarkdownEditor
+            :model-value="props.modelValue"
+            expanded
+            :initial-mode="viewMode"
+            height="calc(100dvh - 6rem)"
+            :on-upload-img="props.onUploadImg"
+            @update:model-value="emit('update:modelValue', $event)"
+          >
+            <template #actions>
+              <slot name="actions" />
+            </template>
+            <template #expanded-actions>
+              <slot name="expanded-actions" />
+            </template>
+          </MarkdownEditor>
+        </div>
+      </template>
+    </UModal>
+    <ImageLightbox ref="lightbox" />
   </div>
 </template>
+
+<style scoped>
+/*
+ * md-editor-v3's own `.md-editor-previewOnly` rule sets `overflow: visible`
+ * directly on the MdPreview root (same specificity as, and loaded after,
+ * our `overflow-y-auto` class), so long content bleeds past the fixed
+ * height into whatever sits below it instead of scrolling internally.
+ */
+:deep(.md-editor-previewOnly) {
+  overflow-y: auto !important;
+}
+:deep(.md-editor-previewOnly .md-editor-preview-wrapper) {
+  padding: 0;
+}
+
+:deep(.md-editor-previewOnly .md-editor-preview > :first-child) {
+  margin-top: 0;
+}
+
+/* Expanded: the box spans the whole container, the text stays in a readable column. */
+:deep(.md-expanded .cm-content),
+:deep(.md-expanded .md-editor-preview) {
+  width: 100%;
+  max-width: 64rem;
+  margin-inline: auto !important;
+}
+</style>

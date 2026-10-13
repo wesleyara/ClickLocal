@@ -18,3 +18,14 @@
 :where(.md-editor-preview) :where(strong, b) {
   font-weight: 600;
 }
+
+/* md-editor-v3 sets `word-break: break-all` on the preview, which splits words mid-letter — in the
+ * text and in mermaid labels (their foreignObject divs inherit it, and mermaid sized them without
+ * it, so they wrap differently than measured). Wrap at word boundaries; only break a single token
+ * (e.g. a long URL) when it alone doesn't fit the line. `:root` lifts specificity because the
+ * library stylesheet loads after this one (lazy-imported with the editor) and would win on order. */
+:root .md-editor-preview,
+:root .md-editor-html {
+  word-break: normal;
+  overflow-wrap: break-word;
+}

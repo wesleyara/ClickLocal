@@ -6,6 +6,7 @@ export interface TimeEntry {
   durationMs: number | null
   source: 'timer' | 'manual'
   note: string | null
+  adoPushedAt: string | null
 }
 
 function storageKey(cardId: number) {

@@ -22,7 +22,7 @@ export function useBoards() {
     }
   }
 
-  async function createBoard(input: { name: string, description?: string }) {
+  async function createBoard(input: { name: string, description?: string, templateId?: string }) {
     const board = await $fetch<BoardSummary>('/api/boards', { method: 'POST', body: input })
     await refresh()
     return board

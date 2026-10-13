@@ -7,6 +7,5 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'expected a non-empty array of {id, columnId, position}' })
   }
 
-  await reorderCards(body)
-  return { success: true }
+  return reorderCards(body)
 })

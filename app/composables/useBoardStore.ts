@@ -5,6 +5,23 @@ export interface BoardTag {
   color: string
 }
 
+export interface AdoWorkItemSummary {
+  cardId: number
+  adoId: number
+  rev: number
+  project: string
+  type: string
+  state: string
+  stateCategory: string
+  descriptionHtml: string | null
+  url: string
+  parentAdoId: number | null
+  parentTitle: string | null
+  parentType: string | null
+  archivedBySync: boolean
+  syncedAt: string
+}
+
 export interface BoardCard {
   id: number
   columnId: number
@@ -19,6 +36,7 @@ export interface BoardCard {
   tags: BoardTag[]
   hasRunningTimer: boolean
   runningTimerStartedAt: string | null
+  ado: AdoWorkItemSummary | null
 }
 
 export interface BoardColumnWithCards {
@@ -27,6 +45,7 @@ export interface BoardColumnWithCards {
   name: string
   color: string
   position: number
+  adoStateCategory: string | null
   cards: BoardCard[]
 }
 
@@ -55,6 +74,12 @@ export const useBoardStore = defineStore('board', {
       }
     },
 
+    async updateBoard(input: { name?: string, description?: string | null }) {
+      if (!this.board) return
+      await $fetch(`/api/boards/${this.board.id}`, { method: 'PATCH', body: input })
+      Object.assign(this.board, input)
+    },
+
     async createColumn(name: string) {
       if (!this.board) return
       const column = await $fetch<BoardColumnWithCards>(`/api/boards/${this.board.id}/columns`, {
@@ -64,7 +89,7 @@ export const useBoardStore = defineStore('board', {
       this.columns.push({ ...column, cards: [] })
     },
 
-    async updateColumn(id: number, input: { name?: string, color?: string }) {
+    async updateColumn(id: number, input: { name?: string, color?: string, adoStateCategory?: string | null }) {
       await $fetch(`/api/columns/${id}`, { method: 'PATCH', body: input })
       const column = this.columns.find(c => c.id === id)
       if (column) Object.assign(column, input)
@@ -76,12 +101,21 @@ export const useBoardStore = defineStore('board', {
     },
 
     async createCard(columnId: number, title: string) {
-      const card = await $fetch<Omit<BoardCard, 'subtaskCount' | 'subtaskDoneCount' | 'childCount' | 'tags' | 'hasRunningTimer' | 'runningTimerStartedAt'>>('/api/cards', {
+      const card = await $fetch<Omit<BoardCard, 'subtaskCount' | 'subtaskDoneCount' | 'childCount' | 'tags' | 'hasRunningTimer' | 'runningTimerStartedAt' | 'ado'>>('/api/cards', {
         method: 'POST',
         body: { columnId, title }
       })
       const column = this.columns.find(c => c.id === columnId)
-      if (column) column.cards.push({ ...card, subtaskCount: 0, subtaskDoneCount: 0, childCount: 0, tags: [], hasRunningTimer: false, runningTimerStartedAt: null })
+      if (column) column.cards.push({ ...card, subtaskCount: 0, subtaskDoneCount: 0, childCount: 0, tags: [], hasRunningTimer: false, runningTimerStartedAt: null, ado: null })
+    },
+
+    async syncAdo() {
+      const result = await $fetch<{ created: number, updated: number, moved: number, archived: number, unarchived: number }>(
+        '/api/integrations/azure-devops/sync',
+        { method: 'POST' }
+      )
+      if (this.board) await this.loadBoard(this.board.id)
+      return result
     },
 
     async deleteCard(id: number) {
@@ -100,8 +134,16 @@ export const useBoardStore = defineStore('board', {
           return { id: card.id, columnId: column.id, position: card.position }
         })
       )
-      if (updates.length === 0) return
-      await $fetch('/api/cards/reorder', { method: 'PATCH', body: updates })
+      if (updates.length === 0) return { failures: [] }
+
+      const result = await $fetch<{ failures: { cardId: number, reason: string }[] }>('/api/cards/reorder', {
+        method: 'PATCH',
+        body: updates
+      })
+      if (result.failures.length > 0 && this.board) {
+        await this.loadBoard(this.board.id)
+      }
+      return result
     },
 
     async persistColumnOrder() {

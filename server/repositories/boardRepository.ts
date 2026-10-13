@@ -30,11 +30,22 @@ export const boardRepository = {
                 subtasks: { select: { completed: true } },
                 tags: { include: { tag: true } },
                 timeEntries: { where: { endedAt: null }, select: { id: true, startedAt: true } },
-                _count: { select: { children: { where: { archived: false } } } }
+                _count: { select: { children: { where: { archived: false } } } },
+                ado: true
               }
             }
           }
         }
+      }
+    })
+  },
+
+  findByIdWithStructure(id: number) {
+    return db.board.findUnique({
+      where: { id },
+      include: {
+        columns: { orderBy: { position: 'asc' }, select: { name: true, color: true } },
+        tags: { orderBy: { id: 'asc' }, select: { name: true, color: true } }
       }
     })
   },

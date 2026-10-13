@@ -7,6 +7,10 @@ export const attachmentRepository = {
     return db.attachment.findUnique({ where: { id } })
   },
 
+  findStorageKeysByCardId(cardId: number) {
+    return db.attachment.findMany({ where: { cardId }, select: { storageKey: true } })
+  },
+
   create(data: Prisma.AttachmentCreateInput, client: DbClient = db) {
     return client.attachment.create({ data })
   }

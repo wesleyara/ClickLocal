@@ -46,9 +46,12 @@ export function addManualEntry(cardId: number, input: { startedAt: string, durat
   })
 }
 
+export class PushedTimeEntryError extends Error {}
+
 export async function updateManualEntry(id: number, input: { startedAt?: string, durationMs?: number, note?: string }) {
   const existing = await timeEntryRepository.findById(id)
   if (!existing) throw new Error('Time entry not found')
+  if (existing.adoPushedAt) throw new PushedTimeEntryError('Horas já enviadas ao Azure DevOps não podem ser editadas')
 
   const startedAt = input.startedAt ? new Date(input.startedAt) : existing.startedAt
   const durationMs = input.durationMs ?? existing.durationMs ?? 0
@@ -63,5 +66,9 @@ export async function updateManualEntry(id: number, input: { startedAt?: string,
 }
 
 export async function deleteEntry(id: number) {
+  const existing = await timeEntryRepository.findById(id)
+  if (!existing) throw new Error('Time entry not found')
+  if (existing.adoPushedAt) throw new PushedTimeEntryError('Horas já enviadas ao Azure DevOps não podem ser excluídas')
+
   await timeEntryRepository.delete(id)
 }

@@ -1,6 +1,8 @@
 /** Generators for `MdEditor`'s exposed `insert(generator)` API — used to drive the custom
  * toolbar in `MarkdownEditor.vue` instead of the library's built-in (and much wider) toolbar. */
 
+/** md-editor-v3 semantics: `deviationStart` is measured from the START of the inserted text,
+ * `deviationEnd` from its END (0 = up to the end, negative = back off). */
 export interface InsertResult {
   targetValue: string
   select?: boolean
@@ -17,7 +19,7 @@ function wrapSelection(before: string, after: string, placeholder: string): Inse
       targetValue: `${before}${text}${after}`,
       select: true,
       deviationStart: before.length,
-      deviationEnd: before.length + text.length
+      deviationEnd: -after.length
     }
   }
 }
@@ -29,7 +31,7 @@ function linePrefix(prefix: string, placeholder: string): InsertGenerator {
       targetValue: `${prefix}${text}`,
       select: true,
       deviationStart: prefix.length,
-      deviationEnd: prefix.length + text.length
+      deviationEnd: 0
     }
   }
 }
@@ -56,7 +58,7 @@ export const codeBlock: InsertGenerator = (selectedText) => {
     targetValue: `\n\`\`\`\n${text}\n\`\`\`\n`,
     select: true,
     deviationStart: 5,
-    deviationEnd: 5 + text.length
+    deviationEnd: -5
   }
 }
 
@@ -66,7 +68,7 @@ export const link: InsertGenerator = (selectedText) => {
     targetValue: `[${text}](https://)`,
     select: true,
     deviationStart: text.length + 3,
-    deviationEnd: text.length + 3 + 8
+    deviationEnd: -1
   }
 }
 
@@ -76,7 +78,7 @@ export const image: InsertGenerator = (selectedText) => {
     targetValue: `![${text}](https://)`,
     select: true,
     deviationStart: text.length + 4,
-    deviationEnd: text.length + 4 + 8
+    deviationEnd: -1
   }
 }
 
@@ -96,6 +98,6 @@ export const katex: InsertGenerator = (selectedText) => {
     targetValue: `\n$$\n${text}\n$$\n`,
     select: true,
     deviationStart: 4,
-    deviationEnd: 4 + text.length
+    deviationEnd: -4
   }
 }

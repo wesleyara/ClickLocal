@@ -3,6 +3,10 @@ import type { DbClient } from '../utils/db'
 import { db } from '../utils/db'
 
 export const commentRepository = {
+  findById(id: number) {
+    return db.comment.findUnique({ where: { id } })
+  },
+
   findByCardId(cardId: number) {
     return db.comment.findMany({ where: { cardId }, orderBy: { createdAt: 'asc' } })
   },
