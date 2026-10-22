@@ -38,6 +38,15 @@ useSeoMeta({
       <template #right>
         <BoardSwitcher />
         <UButton
+          to="/settings/geral"
+          icon="i-lucide-settings"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+        >
+          <span class="hidden sm:inline">Geral</span>
+        </UButton>
+        <UButton
           to="/settings/azure-devops"
           icon="i-lucide-plug-zap"
           color="neutral"
