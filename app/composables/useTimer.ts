@@ -9,6 +9,11 @@ export interface TimeEntry {
   adoPushedAt: string | null
 }
 
+export interface RunningTimer extends TimeEntry {
+  card: { id: number, title: string }
+  board: { id: number, name: string }
+}
+
 function storageKey(cardId: number) {
   return `clicklocal:timer:${cardId}`
 }
@@ -22,7 +27,9 @@ function persistRunning(cardId: number, entry: { id: number, startedAt: string }
   }
 }
 
-export function useTimer(cardId: Ref<number | null>) {
+export function useTimer(cardId: Ref<number | null>, cardTitle?: Ref<string | undefined>) {
+  const { confirm } = useConfirm()
+
   const entries = ref<TimeEntry[]>([])
   const runningEntry = ref<TimeEntry | null>(null)
   const now = ref(Date.now())
@@ -83,9 +90,22 @@ export function useTimer(cardId: Ref<number | null>) {
 
   async function start() {
     if (!cardId.value || runningEntry.value) return
+
+    const running = await $fetch<RunningTimer | null>('/api/time-entries/running')
+    if (running) {
+      if (running.cardId === cardId.value) return refresh()
+      const ok = await confirm({
+        title: 'Trocar timer?',
+        description: `Parar timer em "${running.card.title}" (${running.board.name}) e iniciar em "${cardTitle?.value ?? `#${cardId.value}`}"?`,
+        confirmLabel: 'Parar e iniciar',
+        color: 'primary'
+      })
+      if (!ok) return
+    }
+
     const entry = await $fetch<TimeEntry>(`/api/cards/${cardId.value}/time-entries`, {
       method: 'POST',
-      body: { source: 'timer' }
+      body: { source: 'timer', stopOthers: !!running }
     })
     entries.value.unshift(entry)
     runningEntry.value = entry

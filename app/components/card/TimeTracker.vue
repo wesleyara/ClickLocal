@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { CardAdoSummary } from '~/composables/useCard'
 
-const props = defineProps<{ cardId: number | null, ado?: CardAdoSummary | null }>()
+const props = defineProps<{ cardId: number | null, cardTitle?: string, ado?: CardAdoSummary | null }>()
 const emit = defineEmits<{ changed: [] }>()
 
 const cardIdRef = toRef(props, 'cardId')
-const { entries, runningEntry, elapsedMs, totalMs, start, stop, addManual, removeEntry } = useTimer(cardIdRef)
+const { entries, runningEntry, elapsedMs, totalMs, start, stop, addManual, removeEntry } = useTimer(cardIdRef, toRef(props, 'cardTitle'))
 
 async function handleStop() {
   await stop()

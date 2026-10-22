@@ -1,4 +1,4 @@
-import { addManualEntry, startTimer } from '../../../../services/timeEntries'
+import { addManualEntry, startTimer, TimerAlreadyRunningError } from '../../../../services/timeEntries'
 import { requireIdParam } from '../../../../utils/params'
 
 interface Body {
@@ -6,6 +6,7 @@ interface Body {
   startedAt?: string
   durationMs?: number
   note?: string
+  stopOthers?: boolean
 }
 
 export default defineEventHandler(async (event) => {
@@ -19,5 +20,12 @@ export default defineEventHandler(async (event) => {
     return addManualEntry(cardId, { startedAt: body.startedAt, durationMs: body.durationMs, note: body.note })
   }
 
-  return startTimer(cardId)
+  try {
+    return await startTimer(cardId, { stopOthers: body?.stopOthers === true })
+  } catch (error) {
+    if (error instanceof TimerAlreadyRunningError) {
+      throw createError({ statusCode: 409, statusMessage: error.message })
+    }
+    throw error
+  }
 })
