@@ -18,6 +18,10 @@ export interface ReportGroup {
   label: string
   durationMs: number
   entryCount: number
+  /** Only for `groupBy=day`: the day's time split per board, longest first. */
+  boards?: { id: number, label: string, durationMs: number }[]
+  /** Only for `groupBy=card`: the board the card lives on. */
+  boardId?: number
 }
 
 export interface TimeReport {
@@ -102,9 +106,20 @@ export function aggregateTimeEntries(entries: ReportEntry[], groupBy: ReportGrou
       const group = groups.get(key) ?? { key, label, durationMs: 0, entryCount: 0 }
       group.durationMs += durationMs
       group.entryCount += 1
+      if (groupBy === 'card') group.boardId = entry.card.board.id
       groups.set(key, group)
+
+      if (groupBy === 'day') {
+        const boards = group.boards ??= []
+        const { id, name } = entry.card.board
+        const board = boards.find(b => b.id === id)
+        if (board) board.durationMs += durationMs
+        else boards.push({ id, label: name, durationMs })
+      }
     }
   }
+
+  for (const group of groups.values()) group.boards?.sort((a, b) => b.durationMs - a.durationMs)
 
   const sorted = [...groups.values()].sort((a, b) =>
     groupBy === 'day' ? a.key.localeCompare(b.key) : b.durationMs - a.durationMs || a.label.localeCompare(b.label))

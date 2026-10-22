@@ -38,6 +38,15 @@ useSeoMeta({
       <template #right>
         <BoardSwitcher />
         <UButton
+          to="/reports"
+          icon="i-lucide-chart-column"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+        >
+          <span class="hidden sm:inline">Relatórios</span>
+        </UButton>
+        <UButton
           to="/settings/geral"
           icon="i-lucide-settings"
           color="neutral"
