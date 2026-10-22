@@ -78,4 +78,36 @@ export function registerSubtaskTools(server: McpServer) {
       }
     }
   )
+
+  server.registerTool(
+    'clicklocal_reorder_subtasks',
+    {
+      title: 'Reordenar subtasks',
+      description: 'Define a ordem das subtasks de um card. Informe os IDs de TODAS as subtasks do card na ordem desejada.',
+      inputSchema: {
+        cardId: z.number().int().positive().describe('ID do card'),
+        orderedSubtaskIds: z.array(z.number().int().positive()).min(1).describe('IDs das subtasks na nova ordem')
+      }
+    },
+    async ({ cardId, orderedSubtaskIds }) => {
+      try {
+        const card = await assertCardAllowed(cardId) as { subtasks?: { id: number }[] }
+        const existing = (card.subtasks ?? []).map(s => s.id)
+        const sameSet = existing.length === orderedSubtaskIds.length
+          && new Set(orderedSubtaskIds).size === orderedSubtaskIds.length
+          && existing.every(id => orderedSubtaskIds.includes(id))
+        if (!sameSet) {
+          throw new Error(`orderedSubtaskIds deve conter exatamente as subtasks do card, sem repetição: ${existing.join(', ')}.`)
+        }
+
+        await apiFetch('/subtasks/reorder', {
+          method: 'PATCH',
+          body: JSON.stringify(orderedSubtaskIds.map((id, i) => ({ id, position: (i + 1) * 1000 })))
+        })
+        return { content: [{ type: 'text', text: `Subtasks do card ${cardId} reordenadas: ${orderedSubtaskIds.join(', ')}.` }] }
+      } catch (err) {
+        return toToolError(err)
+      }
+    }
+  )
 }

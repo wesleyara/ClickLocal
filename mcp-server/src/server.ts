@@ -1,6 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { registerBoardTools } from './tools/boards.js'
 import { registerCardTools } from './tools/cards.js'
+import { registerColumnTools } from './tools/columns.js'
+import { registerTemplateTools } from './tools/templates.js'
 import { registerTagTools } from './tools/tags.js'
 import { registerSubtaskTools } from './tools/subtasks.js'
 import { registerCommentTools } from './tools/comments.js'
@@ -13,7 +15,9 @@ export function buildServer(): McpServer {
   })
 
   registerBoardTools(server)
+  registerColumnTools(server)
   registerCardTools(server)
+  registerTemplateTools(server)
   registerTagTools(server)
   registerSubtaskTools(server)
   registerCommentTools(server)

@@ -71,4 +71,34 @@ export function registerTimeEntryTools(server: McpServer) {
       }
     }
   )
+
+  server.registerTool(
+    'clicklocal_update_time_entry',
+    {
+      title: 'Atualizar registro de horas',
+      description: 'Edita início, duração e/ou anotação de um registro de tempo manual. Falha se as horas já tiverem sido enviadas ao Azure DevOps.',
+      inputSchema: {
+        cardId: z.number().int().positive().describe('ID do card dono do registro (usado apenas para verificar acesso, não é enviado à API)'),
+        timeEntryId: z.number().int().positive().describe('ID do registro de tempo'),
+        startedAt: z.string().datetime().optional().describe('Data/hora ISO de início'),
+        durationMs: z.number().int().positive().optional().describe('Duração em milissegundos'),
+        note: z.string().optional().describe('Anotação')
+      }
+    },
+    async ({ cardId, timeEntryId, ...patch }) => {
+      try {
+        if (Object.keys(patch).length === 0) {
+          throw new Error('Informe ao menos um campo (startedAt, durationMs ou note) para atualizar.')
+        }
+        await assertCardAllowed(cardId)
+        const entry = await apiFetch(`/time-entries/${timeEntryId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(patch)
+        })
+        return { content: [{ type: 'text', text: JSON.stringify(entry, null, 2) }] }
+      } catch (err) {
+        return toToolError(err)
+      }
+    }
+  )
 }

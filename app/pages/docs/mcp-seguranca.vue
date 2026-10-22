@@ -27,11 +27,11 @@ npm run build      # gera dist/index.js`
     </ul>
     <p>Isso impede que um agente interfira na sincronização ou em cards ligados a work items reais.</p>
 
-    <h2>Fora do escopo da v1</h2>
+    <h2>Fora do escopo</h2>
     <ul>
-      <li>CRUD de boards e colunas</li>
       <li>Gestão da integração com o Azure DevOps</li>
       <li>Anexos</li>
+      <li>Backup (exportar/importar)</li>
     </ul>
 
     <h2>Tratamento de erros</h2>

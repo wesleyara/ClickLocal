@@ -19,8 +19,8 @@ export async function apiFetch<T = unknown>(path: string, init?: RequestInit): P
     })
   } catch {
     throw new ClickLocalUnreachableError(
-      `Não foi possível conectar à API do ClickLocal em ${url}. Verifique se o app está rodando ` +
-      '(`npm run dev` na raiz do ClickLocal) ou ajuste a variável de ambiente CLICKLOCAL_API_URL.'
+      `Não foi possível conectar à API do ClickLocal em ${url}. Verifique se o app está rodando `
+      + '(`npm run dev` na raiz do ClickLocal) ou ajuste a variável de ambiente CLICKLOCAL_API_URL.'
     )
   }
 

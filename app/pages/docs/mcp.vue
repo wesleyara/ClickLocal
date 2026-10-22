@@ -25,7 +25,7 @@ const config = `{
     <h1>Integração MCP</h1>
     <p>
       O ClickLocal tem um servidor <strong>MCP</strong> (Model Context Protocol) que expõe boards, cards, subtarefas, tags,
-      comentários e horas como <strong>23 tools</strong>. Qualquer cliente MCP (Claude Code, Claude Desktop e outros) pode usá-las
+      comentários e horas como <strong>39 tools</strong>. Qualquer cliente MCP (Claude Code, Claude Desktop e outros) pode usá-las
       para consultar e gerenciar o backlog.
     </p>
 

@@ -79,6 +79,26 @@ Isso evita que um agente externo interfira na sincronização com o Azure DevOps
 | `clicklocal_list_board_tags` | Lista as tags de um board |
 | `clicklocal_create_board_tag` | Cria uma tag em um board |
 | `clicklocal_list_archived_cards` | Lista cards arquivados de um board |
+| `clicklocal_create_board` | Cria um board (opcionalmente a partir de um template) |
+| `clicklocal_update_board` | Renomeia/altera a descrição de um board |
+| `clicklocal_delete_board` | Exclui um board com colunas e cards |
+| `clicklocal_update_board_tag` | Renomeia/recolore uma tag |
+| `clicklocal_delete_board_tag` | Exclui uma tag |
+
+**Colunas**
+| Tool | Descrição |
+|---|---|
+| `clicklocal_create_column` | Cria uma coluna no fim do board |
+| `clicklocal_update_column` | Renomeia/recolore uma coluna |
+| `clicklocal_delete_column` | Exclui uma coluna (e seus cards) |
+| `clicklocal_reorder_columns` | Define a ordem das colunas do board |
+
+**Templates de board**
+| Tool | Descrição |
+|---|---|
+| `clicklocal_list_board_templates` | Lista os templates |
+| `clicklocal_create_board_template` | Salva a estrutura de um board como template |
+| `clicklocal_delete_board_template` | Exclui um template personalizado |
 
 **Cards**
 | Tool | Descrição |
@@ -89,6 +109,8 @@ Isso evita que um agente externo interfira na sincronização com o Azure DevOps
 | `clicklocal_create_child_card` | Cria um card filho |
 | `clicklocal_update_card` | Edita título/descrição/prazo/arquivamento ou move de coluna |
 | `clicklocal_delete_card` | Exclui um card |
+| `clicklocal_reorder_cards` | Define a ordem dos cards de uma coluna (e move cards entre colunas do board) |
+| `clicklocal_list_card_activity` | Histórico de atividade de um card |
 
 **Tags em card**
 | Tool | Descrição |
@@ -102,6 +124,7 @@ Isso evita que um agente externo interfira na sincronização com o Azure DevOps
 | `clicklocal_create_subtask` | Cria uma subtask |
 | `clicklocal_update_subtask` | Renomeia/marca como concluída |
 | `clicklocal_delete_subtask` | Exclui uma subtask |
+| `clicklocal_reorder_subtasks` | Define a ordem das subtasks de um card |
 
 **Comentários**
 | Tool | Descrição |
@@ -117,10 +140,11 @@ Isso evita que um agente externo interfira na sincronização com o Azure DevOps
 | `clicklocal_list_time_entries` | Lista registros de tempo de um card |
 | `clicklocal_log_time_entry` | Registra horas manualmente |
 | `clicklocal_delete_time_entry` | Exclui um registro de tempo |
+| `clicklocal_update_time_entry` | Edita início/duração/anotação de um registro |
 
 > Algumas tools de edição por sub-recurso (`update_subtask`, `delete_subtask`, `update_comment`, `delete_comment`, `delete_time_entry`) exigem `cardId` no input mesmo a API do ClickLocal não precisando dele — é usado só localmente para verificar que o card não pertence ao board do Azure DevOps.
 
-Fora de escopo desta v1: CRUD de boards/colunas, gestão da integração com Azure DevOps e attachments.
+Fora de escopo: gestão da integração com Azure DevOps (conexão, sync, envio de horas, publicação de comentários), attachments (upload/orfãos) e backup (export/import).
 
 ## Tratamento de erros
 

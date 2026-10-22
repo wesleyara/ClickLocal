@@ -173,4 +173,66 @@ export function registerCardTools(server: McpServer) {
       }
     }
   )
+
+  server.registerTool(
+    'clicklocal_reorder_cards',
+    {
+      title: 'Reordenar cards de uma coluna',
+      description: 'Define a ordem dos cards de uma coluna (de cima para baixo). Informe os IDs na ordem desejada; cards de outras colunas do mesmo board informados aqui são movidos para esta coluna. Para reordenar sem perder cards, inclua todos os cards atuais da coluna (veja clicklocal_list_cards).',
+      inputSchema: {
+        boardId: z.number().int().positive().describe('ID do board'),
+        columnId: z.number().int().positive().describe('ID da coluna de destino'),
+        orderedCardIds: z.array(z.number().int().positive()).min(1).describe('IDs dos cards na nova ordem, do topo para baixo')
+      }
+    },
+    async ({ boardId, columnId, orderedCardIds }) => {
+      try {
+        await assertBoardAllowed(boardId)
+        if (new Set(orderedCardIds).size !== orderedCardIds.length) {
+          throw new Error('orderedCardIds contém IDs repetidos.')
+        }
+        const full = await apiFetch<BoardFull>(`/boards/${boardId}/full`)
+        if (!full.columns.some(c => c.id === columnId)) {
+          throw new Error(`A coluna ${columnId} não pertence ao board ${boardId}.`)
+        }
+        const boardCardIds = new Set(full.columns.flatMap(c => c.cards.map(card => card.id)))
+        const unknown = orderedCardIds.filter(id => !boardCardIds.has(id))
+        if (unknown.length > 0) {
+          throw new Error(`Cards não encontrados (ou arquivados) no board ${boardId}: ${unknown.join(', ')}.`)
+        }
+
+        const result = await apiFetch<{ failures?: unknown[] }>('/cards/reorder', {
+          method: 'PATCH',
+          body: JSON.stringify(orderedCardIds.map((id, i) => ({ id, columnId, position: (i + 1) * 1000 })))
+        })
+        const failures = result?.failures ?? []
+        const text = failures.length > 0
+          ? `Reordenação parcial; alguns cards foram revertidos:\n${JSON.stringify(failures, null, 2)}`
+          : `Cards da coluna ${columnId} reordenados: ${orderedCardIds.join(', ')}.`
+        return { content: [{ type: 'text', text }] }
+      } catch (err) {
+        return toToolError(err)
+      }
+    }
+  )
+
+  server.registerTool(
+    'clicklocal_list_card_activity',
+    {
+      title: 'Histórico de atividade do card',
+      description: 'Lista o histórico de atividades de um card (criação, movimentações, edições, etc.).',
+      inputSchema: {
+        cardId: z.number().int().positive().describe('ID do card')
+      }
+    },
+    async ({ cardId }) => {
+      try {
+        await assertCardAllowed(cardId)
+        const activity = await apiFetch(`/cards/${cardId}/activity`)
+        return { content: [{ type: 'text', text: JSON.stringify(activity, null, 2) }] }
+      } catch (err) {
+        return toToolError(err)
+      }
+    }
+  )
 }
