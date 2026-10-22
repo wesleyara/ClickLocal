@@ -243,3 +243,11 @@ model AdoWorkItemType {
   @@id([project, name])
   @@map("ado_work_item_types")
 }
+
+/// General app settings as key/value pairs; values are JSON-encoded. Known keys and their defaults live in `server/utils/settings.ts`.
+model AppSetting {
+  key   String @id
+  value String
+
+  @@map("app_settings")
+}
