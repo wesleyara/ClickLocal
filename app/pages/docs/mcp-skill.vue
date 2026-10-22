@@ -2,12 +2,28 @@
 // § stands in for a backtick so the template can live inside a JS template literal.
 const skillTemplate = `---
 name: clicklocal-task
-description: Executa uma task rastreada no board ClickLocal "<NOME DO BOARD>" (tools clicklocal_*). Use sempre que pedirem para implementar, continuar, checar ou fechar "a task N" ou "o card N". Garante que o card é lido antes de codar e que, ao concluir, é movido para a coluna certa e comentado com o que foi feito.
+description: Executa uma task rastreada no board ClickLocal "<NOME DO BOARD>" (tools clicklocal_*). Use sempre que o pedido citar "task", "tarefa", "card" ou um número de item (ex.: "faça a 506"), ou pedir para implementar, corrigir, continuar, checar ou fechar algo rastreado no board. Obrigatório: o card reflete o andamento do trabalho do começo ao fim (coluna, se o board tiver uma adequada, e comentário). Uma task sem o card atualizado NÃO está concluída.
 ---
 
 # Executar uma task via ClickLocal
 
 Neste projeto, "task" sem mais contexto se refere a um **card do ClickLocal**.
+
+## Regras inegociáveis
+
+O card é o registro oficial do trabalho. Estas regras valem mesmo que a tarefa seja
+pequena, que o usuário não as mencione ou que você esteja com pressa:
+
+1. **Antes de editar qualquer arquivo**, sinalize no card que o trabalho começou:
+   mova-o para a coluna de andamento, se o board tiver uma.
+2. **Antes de encerrar o turno**, o card precisa refletir o estado atual: na coluna
+   que corresponde ao resultado, se existir, **e** com um comentário novo
+   descrevendo o que foi feito.
+3. **Nunca diga "pronto", "concluído" ou equivalente** ao usuário sem ter feito o
+   passo 5 (Fechar) e conferido o resultado. Se o passo 5 não aconteceu, a task
+   não terminou.
+4. Se a tarefa for interrompida, falhar ou ficar bloqueada, o card **também** é
+   atualizado (comentário + coluna). Parar em silêncio não é opção.
 
 ## 0. Localizar o board
 
@@ -15,13 +31,12 @@ O board de trabalho é **"<NOME DO BOARD>"**. Não assuma o ID: chame
 §clicklocal_list_boards§ e confirme pelo nome antes de listar cards. Depois use
 §clicklocal_get_board§ para conferir os IDs das colunas, que podem mudar.
 
-| Coluna        | Uso                                             |
-| ------------- | ----------------------------------------------- |
-| §TO-DO§       | ainda não iniciado                              |
-| §Bugs§        | defeitos reportados (sintoma, causa raiz)       |
-| §In-progress§ | em andamento: mover para cá ao começar          |
-| §Testing§     | implementado, falta validar                     |
-| §Done§        | concluído e verificado                          |
+Cada board tem suas próprias colunas, e nem todo board tem as mesmas. Identifique
+quais representam **não iniciado**, **em andamento**, **em validação** e
+**concluído** (por exemplo §TO-DO§, §In-progress§, §Testing§, §Done§ ou equivalentes
+como "Fazendo" e "Revisão"). Use as que existirem; **se o board não tiver uma coluna
+adequada para o estado, não force nem crie colunas**: registre o estado em
+comentário.
 
 ## 1. Ler o card
 
@@ -34,13 +49,22 @@ registre a decisão no comentário final, não em silêncio.
 
 ## 2. Começar
 
-Mova o card para **In-progress** antes de tocar em código:
-§clicklocal_update_card({ cardId, columnId: <id de In-progress> })§.
+Antes de tocar em código, atualize o card para mostrar que o trabalho começou:
+
+- se houver coluna de andamento, mova-o para ela:
+  §clicklocal_update_card({ cardId, columnId: <id da coluna de andamento> })§, e
+  confira que o §columnId§ mudou de fato (se falhou, repita);
+- se não houver, ou se o card já estiver nela, adicione um comentário curto
+  (§clicklocal_add_comment§) dizendo que o trabalho começou e qual é o plano.
 
 ## 3. Implementar
 
 Fique dentro do que o card pede e siga as convenções do projeto. Em card de bug,
 investigue a causa raiz antes de corrigir.
+
+Em trabalho longo, registre o andamento com §clicklocal_add_comment§ a cada marco
+relevante (decisão tomada, bloqueio, parte entregue), para que o card reflita o
+estado atual do código mesmo que a sessão seja interrompida.
 
 ## 4. Validar
 
@@ -49,10 +73,12 @@ por item, extraindo critérios verificáveis da descrição.
 
 ## 5. Fechar
 
-1. **Sempre** mova o card para a coluna correta. Nunca deixe em In-progress:
-   - tudo verificado de fato: **Done**;
+1. **Sempre** deixe o card na coluna que corresponde ao resultado, se o board tiver
+   uma. Nunca o deixe como "em andamento" ao terminar:
+   - tudo verificado de fato: coluna de concluído (ex.: **Done**);
    - implementado, mas com verificação pendente que este ambiente não consegue
-     fazer: **Testing**. Não force Done.
+     fazer: coluna de validação (ex.: **Testing**), se existir. Não force concluído.
+   - sem coluna equivalente: deixe onde está e deixe o estado claro no comentário.
 2. **Sempre** comente no card (§clicklocal_add_comment§), inclusive quando a task
    para no meio por um bloqueio. O comentário cobre:
    - o que mudou e por quê (bug: sintoma, causa raiz, correção);
@@ -61,13 +87,23 @@ por item, extraindo critérios verificáveis da descrição.
    - decisões de escopo tomadas por conta própria;
    - pendências explícitas. Nunca finja que algo foi verificado sem ter sido.
 3. Se surgir algo fora do escopo, mencione ao relatar ou crie um card novo
-   (§clicklocal_create_card§) em §TO-DO§ ou §Bugs§.
+   (§clicklocal_create_card§) na coluna de backlog ou de bugs, se existir.
+4. **Confira o resultado**: chame §clicklocal_get_card§ e verifique que a coluna é a
+   esperada e que o comentário aparece. Só então responda ao usuário.
+
+### Checklist antes de responder
+
+- [ ] O card foi para a coluna do resultado (quando o board tem uma) ou o estado ficou claro no comentário?
+- [ ] Existe um comentário novo no card com mudanças, validação e pendências?
+- [ ] Conferi com §clicklocal_get_card§ depois de atualizar?
+
+Se algum item estiver sem marcar, faça-o agora, antes da resposta final.
 
 ## Card bloqueado
 
 Se o card depende de algo ainda não pronto, pare e diga qual é o bloqueio antes de
 implementar pela metade. Registre-o num comentário e deixe o card na coluna em que
-faz sentido, não em In-progress.
+faz sentido, não como "em andamento".
 `.replaceAll('§', '`')
 
 const commentTemplate = `**Sintoma:** a lista de cards não atualizava após mover para outra coluna.
@@ -79,11 +115,11 @@ const commentTemplate = `**Sintoma:** a lista de cards não atualizava após mov
 **Pendências:** verificação visual em dispositivo real.`.replaceAll('§', '`')
 
 const flow = `flowchart LR
-  T[TO-DO / Bugs] -->|ler card e mover| P[In-progress]
+  T[Não iniciado] -->|ler card e sinalizar início| P[Em andamento]
   P -->|implementar e validar| Q{Verificado de fato?}
-  Q -->|sim| D[Done]
-  Q -->|falta verificação| X[Testing]
-  P -->|bloqueio| B[Comentar e sair de In-progress]
+  Q -->|sim| D[Concluído]
+  Q -->|falta verificação| X[Validação]
+  P -->|bloqueio| B[Comentar e tirar de andamento]
   D --> C[Comentário obrigatório]
   X --> C`
 </script>
@@ -100,9 +136,11 @@ const flow = `flowchart LR
     <h2>O que a skill garante</h2>
     <ul>
       <li>O card é <strong>lido por inteiro</strong> (descrição, subtarefas e comentários) antes de qualquer código.</li>
-      <li>Ao começar, o card vai para <strong>In-progress</strong>.</li>
-      <li>Ao terminar, o card vai para a <strong>coluna certa</strong> e recebe um <strong>comentário obrigatório</strong> com o que foi feito.</li>
-      <li>Verificação que o ambiente não consegue fazer vai para <strong>Testing</strong>, nunca para Done.</li>
+      <li>Ao começar, o card é sinalizado como em andamento (coluna, se o board tiver uma), <strong>antes</strong> de qualquer edição de código.</li>
+      <li>Em trabalho longo, o andamento é <strong>comentado</strong> a cada marco, e o resultado é conferido ao final.</li>
+      <li>Ao terminar, o card vai para a <strong>coluna certa</strong> (se existir) e recebe um <strong>comentário obrigatório</strong> com o que foi feito.</li>
+      <li>A task <strong>só conta como concluída</strong> depois de o card ser atualizado e conferido, inclusive se parar por um bloqueio.</li>
+      <li>Verificação que o ambiente não consegue fazer vai para a coluna de validação (ex.: Testing), nunca para concluído.</li>
       <li>Trabalho fora do escopo vira um <strong>card novo</strong>, não uma alteração silenciosa.</li>
     </ul>
 
@@ -160,12 +198,15 @@ const flow = `flowchart LR
     <h2>Adaptando ao seu projeto</h2>
     <ul>
       <li>
-        <strong>Colunas diferentes:</strong> a skill depende dos nomes das colunas. Se o seu board usa outras, troque na tabela
-        do passo 0 e nos passos que citam In-progress, Testing e Done.
+        <strong>Colunas diferentes:</strong> a skill se adapta às colunas que existirem; se quiser
+        fixar nomes específicos, descreva-os no passo 0.
       </li>
       <li>
         <strong>Backlog em arquivos:</strong> se os cards espelham tarefas de um backlog em Markdown no repositório, acrescente um
         passo mandando abrir esse arquivo e fechá-lo também. Mover o card não substitui isso.
+      </li>
+      <li>
+        <strong>Reforço no MCP:</strong> o servidor MCP também envia instruções ao agente com essas mesmas regras, então elas valem mesmo em projetos que ainda não têm a skill.
       </li>
       <li>
         <strong>Comandos de validação:</strong> troque lint, typecheck e testes pelos comandos reais do projeto.
