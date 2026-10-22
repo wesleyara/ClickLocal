@@ -41,8 +41,8 @@ describe('aggregateTimeEntries', () => {
     const report = aggregateTimeEntries([nextDay, overnight], 'day', NOW)
 
     expect(report.groups).toEqual([
-      { key: '2026-10-20', label: '2026-10-20', durationMs: 3 * HOUR, entryCount: 1 },
-      { key: '2026-10-21', label: '2026-10-21', durationMs: HOUR, entryCount: 1 }
+      { key: '2026-10-20', label: '2026-10-20', durationMs: 3 * HOUR, entryCount: 1, boards: [{ id: 1, label: 'Board 1', durationMs: 3 * HOUR }] },
+      { key: '2026-10-21', label: '2026-10-21', durationMs: HOUR, entryCount: 1, boards: [{ id: 1, label: 'Board 1', durationMs: HOUR }] }
     ])
     expect(report.totalMs).toBe(4 * HOUR)
   })
@@ -112,5 +112,23 @@ describe('parseIdList', () => {
 
   it('rejects anything that is not an id', () => {
     expect(() => parseIdList('1,x')).toThrow(ReportQueryError)
+  })
+})
+
+describe('aggregateTimeEntries day breakdown', () => {
+  it('splits each day per board', () => {
+    const report = aggregateTimeEntries([
+      entry({ boardId: 1, durationMs: HOUR }),
+      entry({ boardId: 2, durationMs: 2 * HOUR }),
+      entry({ boardId: 1, durationMs: HOUR })
+    ], 'day', NOW)
+    expect(report.groups[0]!.boards).toEqual([
+      { id: 1, label: 'Board 1', durationMs: 2 * HOUR },
+      { id: 2, label: 'Board 2', durationMs: 2 * HOUR }
+    ])
+  })
+
+  it('has no breakdown for other groupings', () => {
+    expect(aggregateTimeEntries([entry()], 'board', NOW).groups[0]!.boards).toBeUndefined()
   })
 })
