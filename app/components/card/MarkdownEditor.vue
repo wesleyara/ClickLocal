@@ -4,7 +4,7 @@ import 'md-editor-v3/lib/style.css'
 import '~/utils/mdEditorConfig'
 import * as md from '~/utils/markdownToolbar'
 import type { InsertGenerator } from '~/utils/markdownToolbar'
-import type { UploadImgCallBack } from 'md-editor-v3'
+import type { ExposeParam, UploadImgCallBack } from 'md-editor-v3'
 
 const props = withDefaults(defineProps<{
   modelValue: string
@@ -22,7 +22,7 @@ const colorMode = useColorMode()
 const editorTheme = computed(() => colorMode.value === 'dark' ? 'dark' : 'light')
 
 const viewMode = ref<'editor' | 'preview'>(props.initialMode ?? 'editor')
-const editorRef = useTemplateRef('editorRef')
+const editorRef = useTemplateRef<ExposeParam>('editorRef')
 const expandedOpen = ref(false)
 // Each instance needs its own id: md-editor derives mermaid/DOM ids from it, so the
 // expanded copy would otherwise clash with the inline one.
@@ -227,8 +227,7 @@ const insertItems = [
         :toolbars="[]"
         :show-code-row-number="true"
         :style="{ height: props.height }"
-        class="!rounded-t-none"
-        :class="{ 'md-expanded': props.expanded }"
+        :class="props.expanded ? '!rounded-t-none md-expanded' : '!rounded-t-none'"
         :on-upload-img="props.onUploadImg"
         :no-img-zoom-in="true"
         @update:model-value="emit('update:modelValue', $event)"
@@ -242,8 +241,7 @@ const insertItems = [
         :theme="editorTheme"
         :no-img-zoom-in="true"
         :show-code-row-number="true"
-        class="border border-default border-t-0 rounded-b-md px-3 py-2 overflow-y-auto"
-        :class="{ 'md-expanded': props.expanded }"
+        :class="`border border-default border-t-0 rounded-b-md px-3 py-2 overflow-y-auto${props.expanded ? ' md-expanded' : ''}`"
         :style="{ height: props.height }"
       />
     </ClientOnly>

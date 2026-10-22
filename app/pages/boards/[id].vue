@@ -7,7 +7,15 @@ const router = useRouter()
 const boardId = Number(route.params.id)
 
 const store = useBoardStore()
-await store.loadBoard(boardId)
+if (!Number.isSafeInteger(boardId) || boardId <= 0) {
+  throw createError({ statusCode: 404, statusMessage: 'Board not found', fatal: true })
+}
+try {
+  await store.loadBoard(boardId)
+} catch (error) {
+  const statusCode = (error as { statusCode?: number }).statusCode ?? 500
+  throw createError({ statusCode, statusMessage: statusCode === 404 ? 'Board not found' : 'Failed to load board', fatal: true })
+}
 
 const boardIdRef = computed(() => boardId)
 const { tags: boardTags } = useBoardTags(boardIdRef)

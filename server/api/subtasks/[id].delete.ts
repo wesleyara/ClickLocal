@@ -1,7 +1,8 @@
 import { deleteSubtask } from '../../services/subtasks'
+import { requireIdParam } from '../../utils/params'
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
+  const id = requireIdParam(event)
 
   try {
     await deleteSubtask(id)

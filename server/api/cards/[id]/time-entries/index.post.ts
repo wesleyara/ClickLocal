@@ -1,4 +1,5 @@
 import { addManualEntry, startTimer } from '../../../../services/timeEntries'
+import { requireIdParam } from '../../../../utils/params'
 
 interface Body {
   source: 'timer' | 'manual'
@@ -8,7 +9,7 @@ interface Body {
 }
 
 export default defineEventHandler(async (event) => {
-  const cardId = Number(getRouterParam(event, 'id'))
+  const cardId = requireIdParam(event)
   const body = await readBody<Body>(event)
 
   if (body?.source === 'manual') {

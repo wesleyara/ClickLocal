@@ -23,6 +23,11 @@ const emit = defineEmits<{
 
 const store = useBoardStore()
 
+async function retryCards(clearError: () => void) {
+  if (store.board) await store.loadBoard(store.board.id)
+  clearError()
+}
+
 // column is store state passed through as a prop; proxy through the store
 // instead of writing to props.column directly so drag reorders stay a store mutation.
 const storeColumn = computed(() => store.columns.find(c => c.id === props.column.id)!)
@@ -143,7 +148,10 @@ defineExpose({
                 @click="editColor = color"
               />
             </div>
-            <div v-if="isAdoBoard" class="flex flex-col gap-1">
+            <div
+              v-if="isAdoBoard"
+              class="flex flex-col gap-1"
+            >
               <label class="text-[11px] font-bold text-muted">Estado no ADO</label>
               <USelect
                 v-model="editAdoStateCategory"
@@ -171,27 +179,40 @@ defineExpose({
       />
     </div>
 
-    <VueDraggable
-      v-model="cards"
-      :data-column-id="column.id"
-      :group="{ name: 'cards', pull: true, put: true }"
-      class="flex flex-col gap-2.5 min-h-[6px] flex-1 overflow-y-auto -me-1 pe-1"
-      ghost-class="opacity-40"
-      :delay="250"
-      :delay-on-touch-only="true"
-      :touch-start-threshold="8"
-      @end="handleDragEnd"
-    >
-      <BoardCard
-        v-for="card in cards"
-        :key="card.id"
-        :data-card-id="card.id"
-        :card="card"
-        :class="{ hidden: !filter(card) }"
-        @delete="emit('delete-card', $event)"
-        @open="emit('open-card', $event)"
-      />
-    </VueDraggable>
+    <NuxtErrorBoundary>
+      <VueDraggable
+        v-model="cards"
+        :data-column-id="column.id"
+        :group="{ name: 'cards', pull: true, put: true }"
+        class="flex flex-col gap-2.5 min-h-[6px] flex-1 overflow-y-auto -me-1 pe-1"
+        ghost-class="opacity-40"
+        :delay="250"
+        :delay-on-touch-only="true"
+        :touch-start-threshold="8"
+        @end="handleDragEnd"
+      >
+        <BoardCard
+          v-for="card in cards"
+          :key="card.id"
+          :data-card-id="card.id"
+          :card="card"
+          :class="{ hidden: !filter(card) }"
+          @delete="emit('delete-card', $event)"
+          @open="emit('open-card', $event)"
+        />
+      </VueDraggable>
+      <template #error="{ clearError }">
+        <UEmpty
+          icon="i-lucide-triangle-alert"
+          title="Erro ao exibir os cards"
+          description="As outras colunas continuam funcionando."
+          variant="naked"
+          size="sm"
+          :actions="[{ label: 'Tentar de novo', icon: 'i-lucide-rotate-cw', onClick: () => retryCards(clearError) }]"
+          class="flex-1"
+        />
+      </template>
+    </NuxtErrorBoundary>
 
     <UInput
       v-if="addingCard"

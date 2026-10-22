@@ -1,4 +1,5 @@
 import { PushedTimeEntryError, stopTimer, updateManualEntry } from '../../services/timeEntries'
+import { requireIdParam } from '../../utils/params'
 
 interface Body {
   stop?: boolean
@@ -8,7 +9,7 @@ interface Body {
 }
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
+  const id = requireIdParam(event)
   const body = await readBody<Body>(event)
 
   try {

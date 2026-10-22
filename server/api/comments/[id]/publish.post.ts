@@ -1,7 +1,8 @@
 import { AlreadyPublishedError, publishComment } from '../../../services/azureDevOps/comments'
+import { requireIdParam } from '../../../utils/params'
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
+  const id = requireIdParam(event)
 
   try {
     return await publishComment(id)

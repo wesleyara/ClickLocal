@@ -1,12 +1,13 @@
 import { cardRepository } from '../../../../repositories/cardRepository'
 import { createAttachment } from '../../../../services/attachments'
 import { MAX_VIDEO_SIZE } from '../../../../utils/storage'
+import { requireIdParam } from '../../../../utils/params'
 
 // Allows multipart overhead on top of the largest file size
 const MAX_BODY_SIZE = MAX_VIDEO_SIZE + 1024 * 1024
 
 export default defineEventHandler(async (event) => {
-  const cardId = Number(getRouterParam(event, 'id'))
+  const cardId = requireIdParam(event)
 
   const contentLength = Number(getRequestHeader(event, 'content-length') ?? 0)
   if (contentLength > MAX_BODY_SIZE) {

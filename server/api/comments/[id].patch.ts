@@ -1,7 +1,8 @@
 import { updateComment } from '../../services/comments'
+import { requireIdParam } from '../../utils/params'
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
+  const id = requireIdParam(event)
   const body = await readBody<{ body?: string }>(event)
 
   if (!body?.body?.trim()) {
