@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import '@fontsource-variable/recursive'
+
 const props = defineProps<{ code: string }>()
 
 const colorMode = useColorMode()
@@ -10,9 +12,15 @@ async function render() {
   if (!container.value) return
   try {
     const { default: mermaid } = await import('mermaid')
+    await document.fonts.load('16px "Recursive Variable"')
     mermaid.initialize({
       startOnLoad: false,
-      theme: colorMode.value === 'dark' ? 'dark' : 'neutral',
+      look: 'neo',
+      htmlLabels: false,
+      flowchart: { htmlLabels: false, curve: 'basis', padding: 16 },
+      fontFamily: '"Recursive Variable", ui-monospace, Menlo, Consolas, monospace',
+      themeVariables: { fontFamily: '"Recursive Variable", ui-monospace, Menlo, Consolas, monospace' },
+      theme: colorMode.value === 'dark' ? 'neo-dark' : 'neo',
       securityLevel: 'strict'
     })
     const { svg } = await mermaid.render(`docs-mermaid-${counter++}-${Date.now()}`, props.code)
