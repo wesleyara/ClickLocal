@@ -1,9 +1,10 @@
 import { getAttachment } from '../../services/attachments'
 import { parseRange } from '../../utils/range'
 import { statFile, streamFile } from '../../utils/storage'
+import { requireIdParam } from '../../utils/params'
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
+  const id = requireIdParam(event)
   const attachment = await getAttachment(id)
 
   if (!attachment) {

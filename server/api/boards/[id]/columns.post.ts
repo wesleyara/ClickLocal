@@ -1,7 +1,8 @@
 import { createColumn } from '../../../services/columns'
+import { requireIdParam } from '../../../utils/params'
 
 export default defineEventHandler(async (event) => {
-  const boardId = Number(getRouterParam(event, 'id'))
+  const boardId = requireIdParam(event)
   const body = await readBody<{ name?: string }>(event)
 
   if (!body?.name?.trim()) {

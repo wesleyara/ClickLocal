@@ -1,7 +1,8 @@
 import { updateColumn } from '../../services/columns'
+import { requireIdParam } from '../../utils/params'
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
+  const id = requireIdParam(event)
   const body = await readBody<{ name?: string, color?: string, adoStateCategory?: string | null }>(event)
 
   try {

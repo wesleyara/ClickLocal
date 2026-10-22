@@ -1,7 +1,8 @@
 import { createSubtask } from '../../../../services/subtasks'
+import { requireIdParam } from '../../../../utils/params'
 
 export default defineEventHandler(async (event) => {
-  const cardId = Number(getRouterParam(event, 'id'))
+  const cardId = requireIdParam(event)
   const body = await readBody<{ title?: string }>(event)
 
   if (!body?.title?.trim()) {

@@ -35,6 +35,9 @@ function openChild(id: number) {
 
 const {
   card,
+  pending: cardPending,
+  loadError,
+  refresh: refreshCard,
   saveDescription,
   addComment,
   removeComment,
@@ -252,163 +255,162 @@ watch(commentsTab, async (tab) => {
     :ui="{ content: fullscreen ? '' : 'sm:max-w-4xl lg:max-w-6xl' }"
   >
     <template #content="{ close }">
-      <div
-        v-if="card"
-        class="flex flex-col flex-1 min-h-0"
-      >
-        <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-default flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <button
-              v-if="stack.length > 1"
-              class="flex items-center gap-1 text-[12px] font-bold text-muted hover:text-default mb-1.5"
-              @click="goBack"
-            >
-              <UIcon
-                name="i-lucide-chevron-left"
-                class="size-3.5"
-              />
-              Back
-            </button>
-            <div
-              v-if="card.ado"
-              class="flex items-center gap-1 text-[11px] font-bold text-muted mb-1 flex-wrap"
-            >
-              <span>{{ card.ado.project }}</span>
-              <template v-if="card.ado.parentAdoId">
+      <NuxtErrorBoundary>
+        <template #error="{ clearError }">
+          <UEmpty
+            icon="i-lucide-triangle-alert"
+            title="Não foi possível exibir este card"
+            description="Ocorreu um erro ao renderizar o card. O restante do board continua funcionando."
+            :actions="[
+              { label: 'Tentar de novo', icon: 'i-lucide-rotate-cw', onClick: () => { clearError(); refreshCard() } },
+              { label: 'Fechar', color: 'neutral', variant: 'outline', onClick: close }
+            ]"
+            class="py-12"
+          />
+        </template>
+        <UEmpty
+          v-if="!card && loadError"
+          :icon="loadError === 404 ? 'i-lucide-search-x' : 'i-lucide-triangle-alert'"
+          :title="loadError === 404 ? 'Card não encontrado' : 'Falha ao carregar o card'"
+          :description="loadError === 404 ? 'Ele pode ter sido excluído ou o link está desatualizado.' : 'Tente de novo em instantes.'"
+          :actions="[
+            ...(loadError === 404 ? [] : [{ label: 'Tentar de novo', icon: 'i-lucide-rotate-cw', loading: cardPending, onClick: () => refreshCard() }]),
+            { label: 'Fechar', color: 'neutral' as const, variant: 'outline' as const, onClick: close }
+          ]"
+          class="py-12"
+        />
+        <div
+          v-else-if="card"
+          class="flex flex-col flex-1 min-h-0"
+        >
+          <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-default flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <button
+                v-if="stack.length > 1"
+                class="flex items-center gap-1 text-[12px] font-bold text-muted hover:text-default mb-1.5"
+                @click="goBack"
+              >
                 <UIcon
-                  name="i-lucide-chevron-right"
+                  name="i-lucide-chevron-left"
+                  class="size-3.5"
+                />
+                Back
+              </button>
+              <div
+                v-if="card.ado"
+                class="flex items-center gap-1 text-[11px] font-bold text-muted mb-1 flex-wrap"
+              >
+                <span>{{ card.ado.project }}</span>
+                <template v-if="card.ado.parentAdoId">
+                  <UIcon
+                    name="i-lucide-chevron-right"
+                    class="size-3"
+                  />
+                  <a
+                    v-if="parentBreadcrumbUrl"
+                    :href="parentBreadcrumbUrl"
+                    target="_blank"
+                    rel="noopener"
+                    class="hover:text-default hover:underline"
+                  >{{ card.ado.parentType }} #{{ card.ado.parentAdoId }} {{ card.ado.parentTitle }}</a>
+                  <span v-else>{{ card.ado.parentType }} #{{ card.ado.parentAdoId }} {{ card.ado.parentTitle }}</span>
+                </template>
+              </div>
+              <div class="flex items-center gap-2 mb-0.5">
+                <span class="text-[11px] font-bold font-mono text-muted">
+                  #{{ card.id }}
+                </span>
+                <span
+                  v-if="currentColumn"
+                  class="inline-flex items-center gap-1.5 text-[11px] font-bold rounded-full px-2 py-0.5"
+                  :style="{ background: `${currentColumn.color}1f`, color: currentColumn.color }"
+                >
+                  <span
+                    class="size-1.5 rounded-full"
+                    :style="{ background: currentColumn.color }"
+                  />
+                  {{ currentColumn.name }}
+                </span>
+              </div>
+              <UInput
+                v-if="editingTitle"
+                v-model="titleDraft"
+                autofocus
+                size="lg"
+                :ui="{ base: 'text-[17px] sm:text-[19px] font-extrabold tracking-tight' }"
+                class="w-full"
+                @keydown.enter="submitTitle"
+                @keydown.esc="editingTitle = false"
+                @blur="submitTitle"
+              />
+              <p
+                v-else
+                class="text-[17px] sm:text-[19px] font-extrabold tracking-tight leading-snug"
+                :class="card.ado ? '' : 'cursor-text hover:opacity-80'"
+                @click="card.ado ? undefined : startEditTitle()"
+              >
+                {{ card.title }}
+              </p>
+              <span
+                v-if="card.archived"
+                class="inline-flex items-center gap-1 text-[11px] font-bold text-muted mt-1.5"
+              >
+                <UIcon
+                  name="i-lucide-archive"
                   class="size-3"
                 />
-                <a
-                  v-if="parentBreadcrumbUrl"
-                  :href="parentBreadcrumbUrl"
-                  target="_blank"
-                  rel="noopener"
-                  class="hover:text-default hover:underline"
-                >{{ card.ado.parentType }} #{{ card.ado.parentAdoId }} {{ card.ado.parentTitle }}</a>
-                <span v-else>{{ card.ado.parentType }} #{{ card.ado.parentAdoId }} {{ card.ado.parentTitle }}</span>
-              </template>
-            </div>
-            <div class="flex items-center gap-2 mb-0.5">
-              <span class="text-[11px] font-bold font-mono text-muted">
-                #{{ card.id }}
+                Archived
               </span>
-              <span
-                v-if="currentColumn"
-                class="inline-flex items-center gap-1.5 text-[11px] font-bold rounded-full px-2 py-0.5"
-                :style="{ background: `${currentColumn.color}1f`, color: currentColumn.color }"
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <UButton
+                v-if="card.ado"
+                icon="i-lucide-external-link"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                :to="workItemUrl(card.ado.project, card.ado.adoId) ?? undefined"
+                target="_blank"
               >
-                <span
-                  class="size-1.5 rounded-full"
-                  :style="{ background: currentColumn.color }"
-                />
-                {{ currentColumn.name }}
-              </span>
-            </div>
-            <UInput
-              v-if="editingTitle"
-              v-model="titleDraft"
-              autofocus
-              size="lg"
-              :ui="{ base: 'text-[17px] sm:text-[19px] font-extrabold tracking-tight' }"
-              class="w-full"
-              @keydown.enter="submitTitle"
-              @keydown.esc="editingTitle = false"
-              @blur="submitTitle"
-            />
-            <p
-              v-else
-              class="text-[17px] sm:text-[19px] font-extrabold tracking-tight leading-snug"
-              :class="card.ado ? '' : 'cursor-text hover:opacity-80'"
-              @click="card.ado ? undefined : startEditTitle()"
-            >
-              {{ card.title }}
-            </p>
-            <span
-              v-if="card.archived"
-              class="inline-flex items-center gap-1 text-[11px] font-bold text-muted mt-1.5"
-            >
-              <UIcon
-                name="i-lucide-archive"
-                class="size-3"
+                <span class="hidden sm:inline">Abrir no ADO</span>
+              </UButton>
+              <UButton
+                :icon="card.archived ? 'i-lucide-archive-restore' : 'i-lucide-archive'"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                @click="handleToggleArchive"
+              >
+                <span class="hidden sm:inline">{{ card.archived ? 'Unarchive' : 'Archive' }}</span>
+              </UButton>
+              <UButton
+                :icon="fullscreen ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                @click="fullscreen = !fullscreen"
               />
-              Archived
-            </span>
+              <UButton
+                icon="i-lucide-x"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                @click="close"
+              />
+            </div>
           </div>
-          <div class="flex items-center gap-1 shrink-0">
-            <UButton
-              v-if="card.ado"
-              icon="i-lucide-external-link"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              :to="workItemUrl(card.ado.project, card.ado.adoId) ?? undefined"
-              target="_blank"
-            >
-              <span class="hidden sm:inline">Abrir no ADO</span>
-            </UButton>
-            <UButton
-              :icon="card.archived ? 'i-lucide-archive-restore' : 'i-lucide-archive'"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              @click="handleToggleArchive"
-            >
-              <span class="hidden sm:inline">{{ card.archived ? 'Unarchive' : 'Archive' }}</span>
-            </UButton>
-            <UButton
-              :icon="fullscreen ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              @click="fullscreen = !fullscreen"
-            />
-            <UButton
-              icon="i-lucide-x"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              @click="close"
-            />
-          </div>
-        </div>
 
-        <div
-          class="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5"
-          @click="onMarkdownClick"
-        >
-          <div class="flex flex-col gap-8 lg:grid lg:grid-cols-3 lg:gap-9 lg:items-start">
-            <div class="flex flex-col gap-8 lg:col-span-2 lg:min-w-0">
-              <div class="flex flex-col gap-2">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted">Description</span>
-                  <UButton
-                    v-if="!card.ado"
-                    label="Salvar"
-                    icon="i-lucide-check"
-                    size="xs"
-                    :color="descriptionDirty ? 'primary' : 'neutral'"
-                    :variant="descriptionDirty ? 'soft' : 'ghost'"
-                    :loading="savingDescription"
-                    :disabled="!descriptionDirty"
-                    class="disabled:opacity-40"
-                    @click="submitDescription"
-                  />
-                </div>
-                <div
-                  v-if="card.ado"
-                  class="border border-default rounded-lg p-3 text-[13px] leading-relaxed [&_a]:text-primary [&_a]:underline [&_img]:max-w-full [&_img]:rounded-md"
-                  v-html="sanitizedAdoDescription || '<p class=\'text-muted\'>Sem descrição</p>'"
-                />
-                <MarkdownEditor
-                  v-else
-                  :model-value="descriptionDraft"
-                  height="300px"
-                  :on-upload-img="handleUploadImg"
-                  @update:model-value="onDescriptionChange"
-                >
-                  <template #actions>
+          <div
+            class="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5"
+            @click="onMarkdownClick"
+          >
+            <div class="flex flex-col gap-8 lg:grid lg:grid-cols-3 lg:gap-9 lg:items-start">
+              <div class="flex flex-col gap-8 lg:col-span-2 lg:min-w-0">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted">Description</span>
                     <UButton
+                      v-if="!card.ado"
                       label="Salvar"
                       icon="i-lucide-check"
                       size="xs"
@@ -419,190 +421,216 @@ watch(commentsTab, async (tab) => {
                       class="disabled:opacity-40"
                       @click="submitDescription"
                     />
-                  </template>
-                </MarkdownEditor>
-              </div>
-
-              <SubtaskList
-                :subtasks="card.subtasks"
-                @add="handleAddSubtask"
-                @toggle="handleToggleSubtask"
-                @remove="handleRemoveSubtask"
-                @rename="handleRenameSubtask"
-              />
-
-              <div class="flex flex-col gap-3">
-                <div
-                  v-if="card.ado"
-                  class="flex items-center gap-4 border-b border-default"
-                >
-                  <button
-                    class="text-[11.5px] font-extrabold uppercase tracking-wide pb-2 -mb-px border-b-2"
-                    :class="commentsTab === 'local' ? 'text-default border-primary' : 'text-muted border-transparent'"
-                    @click="commentsTab = 'local'"
-                  >
-                    Comments &middot; {{ card.comments.length }}
-                  </button>
-                  <button
-                    class="text-[11.5px] font-extrabold uppercase tracking-wide pb-2 -mb-px border-b-2"
-                    :class="commentsTab === 'ado' ? 'text-default border-primary' : 'text-muted border-transparent'"
-                    @click="commentsTab = 'ado'"
-                  >
-                    Discussion (ADO)
-                  </button>
-                </div>
-                <span
-                  v-else
-                  class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted"
-                >
-                  Comments &middot; {{ card.comments.length }}
-                </span>
-
-                <template v-if="commentsTab === 'ado' && card.ado">
-                  <p
-                    v-if="loadingAdoDiscussion"
-                    class="text-[12.5px] text-muted"
-                  >
-                    Carregando...
-                  </p>
-                  <p
-                    v-else-if="adoDiscussionError"
-                    class="text-[12.5px] text-error"
-                  >
-                    {{ adoDiscussionError }}
-                  </p>
-                  <p
-                    v-else-if="adoDiscussion.length === 0"
-                    class="text-[12.5px] text-muted"
-                  >
-                    Nenhum comentário no Azure DevOps.
-                  </p>
+                  </div>
                   <div
-                    v-else
-                    class="flex flex-col gap-4"
-                  >
-                    <div
-                      v-for="discussionComment in adoDiscussion"
-                      :key="discussionComment.id"
-                      class="flex flex-col gap-1.5"
-                    >
-                      <span class="text-[11px] text-muted">
-                        {{ discussionComment.author }} &middot; {{ new Date(discussionComment.createdDate).toLocaleString() }}
-                      </span>
-                      <div
-                        class="text-[13px] leading-relaxed [&_a]:text-primary [&_a]:underline"
-                        v-html="DOMPurify.sanitize(discussionComment.text)"
-                      />
-                    </div>
-                  </div>
-                </template>
-
-                <template v-else>
-                  <div class="flex flex-col gap-4">
-                    <div
-                      v-for="comment in card.comments"
-                      :key="comment.id"
-                      class="group flex flex-col gap-1.5"
-                    >
-                      <div class="flex items-center justify-between">
-                        <span class="flex items-center gap-2 text-[11px] text-muted">
-                          {{ new Date(comment.createdAt).toLocaleString() }}
-                          <span
-                            v-if="comment.adoCommentId"
-                            class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 rounded-md px-1.5 py-0.5"
-                          >
-                            <UIcon
-                              name="i-lucide-check"
-                              class="size-2.5"
-                            />
-                            Publicado
-                          </span>
-                        </span>
-                        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                          <UButton
-                            v-if="card.ado && !comment.adoCommentId"
-                            label="Publicar no ADO"
-                            size="xs"
-                            color="neutral"
-                            variant="ghost"
-                            @click="handlePublishComment(comment.id, comment.body)"
-                          />
-                          <UButton
-                            icon="i-lucide-trash-2"
-                            size="xs"
-                            color="neutral"
-                            variant="ghost"
-                            @click="removeComment(comment.id)"
-                          />
-                        </div>
-                      </div>
-                      <ClientOnly>
-                        <MdPreview
-                          :model-value="comment.body"
-                          language="en-US"
-                          preview-theme="default"
-                          :theme="colorMode.value === 'dark' ? 'dark' : 'light'"
-                          class="text-[13px]"
-                          :no-img-zoom-in="true"
-                          :show-code-row-number="true"
-                        />
-                      </ClientOnly>
-                    </div>
-                  </div>
-
+                    v-if="card.ado"
+                    class="border border-default rounded-lg p-3 text-[13px] leading-relaxed [&_a]:text-primary [&_a]:underline [&_img]:max-w-full [&_img]:rounded-md"
+                    v-html="sanitizedAdoDescription || '<p class=\'text-muted\'>Sem descrição</p>'"
+                  />
                   <MarkdownEditor
-                    v-model="newComment"
-                    height="160px"
+                    v-else
+                    :model-value="descriptionDraft"
+                    height="300px"
                     :on-upload-img="handleUploadImg"
+                    @update:model-value="onDescriptionChange"
                   >
                     <template #actions>
                       <UButton
-                        label="Comment"
+                        label="Salvar"
+                        icon="i-lucide-check"
                         size="xs"
-                        :loading="postingComment"
-                        :disabled="!newComment.trim()"
-                        @click="submitComment"
+                        :color="descriptionDirty ? 'primary' : 'neutral'"
+                        :variant="descriptionDirty ? 'soft' : 'ghost'"
+                        :loading="savingDescription"
+                        :disabled="!descriptionDirty"
+                        class="disabled:opacity-40"
+                        @click="submitDescription"
                       />
                     </template>
                   </MarkdownEditor>
-                  <UButton
-                    label="Comment"
-                    size="sm"
-                    class="self-end"
-                    :loading="postingComment"
-                    :disabled="!newComment.trim()"
-                    @click="submitComment"
-                  />
-                </template>
+                </div>
+
+                <SubtaskList
+                  :subtasks="card.subtasks"
+                  @add="handleAddSubtask"
+                  @toggle="handleToggleSubtask"
+                  @remove="handleRemoveSubtask"
+                  @rename="handleRenameSubtask"
+                />
+
+                <div class="flex flex-col gap-3">
+                  <div
+                    v-if="card.ado"
+                    class="flex items-center gap-4 border-b border-default"
+                  >
+                    <button
+                      class="text-[11.5px] font-extrabold uppercase tracking-wide pb-2 -mb-px border-b-2"
+                      :class="commentsTab === 'local' ? 'text-default border-primary' : 'text-muted border-transparent'"
+                      @click="commentsTab = 'local'"
+                    >
+                      Comments &middot; {{ card.comments.length }}
+                    </button>
+                    <button
+                      class="text-[11.5px] font-extrabold uppercase tracking-wide pb-2 -mb-px border-b-2"
+                      :class="commentsTab === 'ado' ? 'text-default border-primary' : 'text-muted border-transparent'"
+                      @click="commentsTab = 'ado'"
+                    >
+                      Discussion (ADO)
+                    </button>
+                  </div>
+                  <span
+                    v-else
+                    class="text-[11.5px] font-extrabold uppercase tracking-wide text-muted"
+                  >
+                    Comments &middot; {{ card.comments.length }}
+                  </span>
+
+                  <template v-if="commentsTab === 'ado' && card.ado">
+                    <p
+                      v-if="loadingAdoDiscussion"
+                      class="text-[12.5px] text-muted"
+                    >
+                      Carregando...
+                    </p>
+                    <p
+                      v-else-if="adoDiscussionError"
+                      class="text-[12.5px] text-error"
+                    >
+                      {{ adoDiscussionError }}
+                    </p>
+                    <p
+                      v-else-if="adoDiscussion.length === 0"
+                      class="text-[12.5px] text-muted"
+                    >
+                      Nenhum comentário no Azure DevOps.
+                    </p>
+                    <div
+                      v-else
+                      class="flex flex-col gap-4"
+                    >
+                      <div
+                        v-for="discussionComment in adoDiscussion"
+                        :key="discussionComment.id"
+                        class="flex flex-col gap-1.5"
+                      >
+                        <span class="text-[11px] text-muted">
+                          {{ discussionComment.author }} &middot; {{ new Date(discussionComment.createdDate).toLocaleString() }}
+                        </span>
+                        <div
+                          class="text-[13px] leading-relaxed [&_a]:text-primary [&_a]:underline"
+                          v-html="DOMPurify.sanitize(discussionComment.text)"
+                        />
+                      </div>
+                    </div>
+                  </template>
+
+                  <template v-else>
+                    <div class="flex flex-col gap-4">
+                      <div
+                        v-for="comment in card.comments"
+                        :key="comment.id"
+                        class="group flex flex-col gap-1.5"
+                      >
+                        <div class="flex items-center justify-between">
+                          <span class="flex items-center gap-2 text-[11px] text-muted">
+                            {{ new Date(comment.createdAt).toLocaleString() }}
+                            <span
+                              v-if="comment.adoCommentId"
+                              class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 rounded-md px-1.5 py-0.5"
+                            >
+                              <UIcon
+                                name="i-lucide-check"
+                                class="size-2.5"
+                              />
+                              Publicado
+                            </span>
+                          </span>
+                          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                            <UButton
+                              v-if="card.ado && !comment.adoCommentId"
+                              label="Publicar no ADO"
+                              size="xs"
+                              color="neutral"
+                              variant="ghost"
+                              @click="handlePublishComment(comment.id, comment.body)"
+                            />
+                            <UButton
+                              icon="i-lucide-trash-2"
+                              size="xs"
+                              color="neutral"
+                              variant="ghost"
+                              @click="removeComment(comment.id)"
+                            />
+                          </div>
+                        </div>
+                        <ClientOnly>
+                          <MdPreview
+                            :model-value="comment.body"
+                            language="en-US"
+                            preview-theme="default"
+                            :theme="colorMode.value === 'dark' ? 'dark' : 'light'"
+                            class="text-[13px]"
+                            :no-img-zoom-in="true"
+                            :show-code-row-number="true"
+                          />
+                        </ClientOnly>
+                      </div>
+                    </div>
+
+                    <MarkdownEditor
+                      v-model="newComment"
+                      height="160px"
+                      :on-upload-img="handleUploadImg"
+                    >
+                      <template #actions>
+                        <UButton
+                          label="Comment"
+                          size="xs"
+                          :loading="postingComment"
+                          :disabled="!newComment.trim()"
+                          @click="submitComment"
+                        />
+                      </template>
+                    </MarkdownEditor>
+                    <UButton
+                      label="Comment"
+                      size="sm"
+                      class="self-end"
+                      :loading="postingComment"
+                      :disabled="!newComment.trim()"
+                      @click="submitComment"
+                    />
+                  </template>
+                </div>
               </div>
-            </div>
 
-            <div class="flex flex-col gap-8 lg:col-span-1 lg:sticky lg:top-0">
-              <TagPicker
-                :assigned-tags="card.tags"
-                :board-tags="boardTags"
-                @add="handleAddTag"
-                @remove="handleRemoveTag"
-                @create="handleCreateTag"
-              />
+              <div class="flex flex-col gap-8 lg:col-span-1 lg:sticky lg:top-0">
+                <TagPicker
+                  :assigned-tags="card.tags"
+                  :board-tags="boardTags"
+                  @add="handleAddTag"
+                  @remove="handleRemoveTag"
+                  @create="handleCreateTag"
+                />
 
-              <TimeTracker
-                :card-id="activeCardId"
-                :ado="card.ado"
-                @changed="refreshActivity"
-              />
+                <TimeTracker
+                  :card-id="activeCardId"
+                  :ado="card.ado"
+                  @changed="refreshActivity"
+                />
 
-              <ChildTaskList
-                :children="card.children"
-                @add="handleAddChildCard"
-                @open="openChild"
-              />
+                <ChildTaskList
+                  :children="card.children"
+                  @add="handleAddChildCard"
+                  @open="openChild"
+                />
 
-              <ActivityFeed :entries="activityEntries" />
+                <ActivityFeed :entries="activityEntries" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </NuxtErrorBoundary>
     </template>
   </UModal>
   <ImageLightbox ref="lightbox" />

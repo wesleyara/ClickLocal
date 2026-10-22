@@ -1,6 +1,7 @@
 import { listActivity } from '../../../../services/activity'
+import { requireIdParam } from '../../../../utils/params'
 
 export default defineEventHandler((event) => {
-  const cardId = Number(getRouterParam(event, 'id'))
+  const cardId = requireIdParam(event)
   return listActivity(cardId)
 })

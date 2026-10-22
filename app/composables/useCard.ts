@@ -71,8 +71,11 @@ export interface CardDetail {
 export function useCard(id: Ref<number | null>) {
   const card = ref<CardDetail | null>(null)
   const pending = ref(false)
+  // status code of the last failed load (e.g. 404 for a stale ?card= link), null when ok
+  const loadError = ref<number | null>(null)
 
   async function refresh() {
+    loadError.value = null
     if (!id.value) {
       card.value = null
       return
@@ -80,6 +83,9 @@ export function useCard(id: Ref<number | null>) {
     pending.value = true
     try {
       card.value = await $fetch<CardDetail>(`/api/cards/${id.value}`)
+    } catch (error) {
+      card.value = null
+      loadError.value = (error as { statusCode?: number }).statusCode ?? 500
     } finally {
       pending.value = false
     }
@@ -209,6 +215,7 @@ export function useCard(id: Ref<number | null>) {
   return {
     card,
     pending,
+    loadError,
     refresh,
     saveDescription,
     saveTitle,
