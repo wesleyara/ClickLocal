@@ -615,6 +615,7 @@ watch(commentsTab, async (tab) => {
 
                 <TimeTracker
                   :card-id="activeCardId"
+                  :card-title="card.title"
                   :ado="card.ado"
                   @changed="refreshActivity"
                 />

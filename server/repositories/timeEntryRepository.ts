@@ -11,6 +11,18 @@ export const timeEntryRepository = {
     return db.timeEntry.findUnique({ where: { id } })
   },
 
+  findRunning(client: DbClient = db) {
+    return client.timeEntry.findMany({
+      where: { endedAt: null },
+      orderBy: { startedAt: 'desc' },
+      include: {
+        card: {
+          select: { id: true, title: true, column: { select: { board: { select: { id: true, name: true } } } } }
+        }
+      }
+    })
+  },
+
   create(data: Prisma.TimeEntryCreateInput, client: DbClient = db) {
     return client.timeEntry.create({ data })
   },

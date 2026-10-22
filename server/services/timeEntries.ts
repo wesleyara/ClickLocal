@@ -1,31 +1,55 @@
 import { timeEntryRepository } from '../repositories/timeEntryRepository'
 import { logActivity } from '../utils/activity'
+import type { DbClient } from '../utils/db'
 import { db } from '../utils/db'
 
 export function listEntries(cardId: number) {
   return timeEntryRepository.findByCardId(cardId)
 }
 
-export function startTimer(cardId: number) {
-  return timeEntryRepository.create({
-    startedAt: new Date(),
-    source: 'timer',
-    card: { connect: { id: cardId } }
+export async function getRunningTimer() {
+  const [running] = await timeEntryRepository.findRunning()
+  if (!running) return null
+
+  const { card, ...entry } = running
+  return { ...entry, card: { id: card.id, title: card.title }, board: card.column.board }
+}
+
+export class TimerAlreadyRunningError extends Error {}
+
+/** Only one timer may run at a time: with `stopOthers` any running timer is closed in the same transaction, otherwise starting fails. */
+export function startTimer(cardId: number, options: { stopOthers?: boolean } = {}) {
+  return db.$transaction(async (tx) => {
+    const running = await timeEntryRepository.findRunning(tx)
+    if (running.length && !options.stopOthers) {
+      throw new TimerAlreadyRunningError(`Já existe um timer rodando em "${running[0]!.card.title}"`)
+    }
+
+    const endedAt = new Date()
+    for (const entry of running) {
+      await closeTimer(entry, endedAt, tx)
+    }
+
+    return timeEntryRepository.create({
+      startedAt: endedAt,
+      source: 'timer',
+      card: { connect: { id: cardId } }
+    }, tx)
   })
+}
+
+async function closeTimer(entry: { id: number, cardId: number, startedAt: Date }, endedAt: Date, tx: DbClient) {
+  const durationMs = endedAt.getTime() - entry.startedAt.getTime()
+  const updated = await timeEntryRepository.update(entry.id, { endedAt, durationMs }, tx)
+  await logActivity(entry.cardId, 'time_entry_added', { durationMs, source: 'timer' }, tx)
+  return updated
 }
 
 export async function stopTimer(id: number) {
   const entry = await timeEntryRepository.findById(id)
   if (!entry) throw new Error('Time entry not found')
 
-  const endedAt = new Date()
-  const durationMs = endedAt.getTime() - entry.startedAt.getTime()
-
-  return db.$transaction(async (tx) => {
-    const updated = await timeEntryRepository.update(id, { endedAt, durationMs }, tx)
-    await logActivity(entry.cardId, 'time_entry_added', { durationMs, source: 'timer' }, tx)
-    return updated
-  })
+  return db.$transaction(tx => closeTimer(entry, new Date(), tx))
 }
 
 export function addManualEntry(cardId: number, input: { startedAt: string, durationMs: number, note?: string }) {
