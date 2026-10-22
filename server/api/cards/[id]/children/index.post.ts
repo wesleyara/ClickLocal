@@ -1,7 +1,8 @@
 import { createChildCard } from '../../../../services/cards'
+import { requireIdParam } from '../../../../utils/params'
 
 export default defineEventHandler(async (event) => {
-  const parentId = Number(getRouterParam(event, 'id'))
+  const parentId = requireIdParam(event)
   const body = await readBody<{ title?: string }>(event)
 
   if (!body?.title?.trim()) {

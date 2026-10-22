@@ -1,7 +1,8 @@
 import { attachTag } from '../../../../services/tags'
+import { requireIdParam } from '../../../../utils/params'
 
 export default defineEventHandler(async (event) => {
-  const cardId = Number(getRouterParam(event, 'id'))
+  const cardId = requireIdParam(event)
   const body = await readBody<{ tagId?: number }>(event)
 
   if (!body?.tagId) {

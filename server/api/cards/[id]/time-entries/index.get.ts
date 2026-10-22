@@ -1,6 +1,7 @@
 import { listEntries } from '../../../../services/timeEntries'
+import { requireIdParam } from '../../../../utils/params'
 
 export default defineEventHandler((event) => {
-  const cardId = Number(getRouterParam(event, 'id'))
+  const cardId = requireIdParam(event)
   return listEntries(cardId)
 })

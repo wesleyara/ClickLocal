@@ -1,7 +1,8 @@
 import { listAdoDiscussion } from '../../../services/azureDevOps/comments'
+import { requireIdParam } from '../../../utils/params'
 
 export default defineEventHandler(async (event) => {
-  const cardId = Number(getRouterParam(event, 'id'))
+  const cardId = requireIdParam(event)
 
   try {
     return await listAdoDiscussion(cardId)
